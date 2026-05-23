@@ -1,29 +1,21 @@
 package com.okanetransfer.repository;
 
+import com.okanetransfer.entity.Agency;
 import com.okanetransfer.entity.Agent;
+import com.okanetransfer.enums.Role;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
-@Transactional
-public class AgentRepository {
+public interface AgentRepository extends JpaRepository<Agent, Long> {
 
-    @PersistenceContext
-    private EntityManager em;
+    List<Agent> findByAgency(Agency agency);
 
-    public Agent save(Agent a) { em.persist(a); return a; }
+    List<Agent> findByActive(boolean active);
 
-    public Optional<Agent> findById(Long id) {
-        return Optional.ofNullable(em.find(Agent.class, id));
-    }
+    List<Agent> findByAgencyAndRole(Agency agency, Role role);
 
-    public List<Agent> findByAgencyId(Long agencyId) {
-        return em.createQuery("SELECT a FROM Agent a WHERE a.agency.id = :id", Agent.class)
-                .setParameter("id", agencyId).getResultList();
-    }
+    List<Agent> findByAgency_Id(Long agencyId);
 }

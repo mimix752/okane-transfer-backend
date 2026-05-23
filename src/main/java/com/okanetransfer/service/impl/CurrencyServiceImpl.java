@@ -6,7 +6,7 @@ import com.okanetransfer.entity.Currency;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CurrencyRepository;
 import com.okanetransfer.repository.CorridorRepository;
-import com.okanetransfer.service.AuditLogService;
+import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.CurrencyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ public class CurrencyServiceImpl implements CurrencyService {
 
     private final CurrencyRepository  currencyRepository;
     private final CorridorRepository  corridorRepository;
-    private final AuditLogService     auditLogService;
+    private final AuditService auditLogService;
 
     @Override
     @Transactional(readOnly = true)

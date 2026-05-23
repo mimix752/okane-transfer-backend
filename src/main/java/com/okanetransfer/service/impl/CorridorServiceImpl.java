@@ -7,7 +7,7 @@ import com.okanetransfer.entity.Currency;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.CurrencyRepository;
-import com.okanetransfer.service.AuditLogService;
+import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.CorridorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class CorridorServiceImpl implements CorridorService {
 
     private final CorridorRepository  corridorRepository;
     private final CurrencyRepository  currencyRepository;
-    private final AuditLogService     auditLogService;
+    private final AuditService auditLogService;
 
 
     @Override

@@ -7,7 +7,8 @@ import com.okanetransfer.entity.FeeGrid;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.FeeGridRepository;
-import com.okanetransfer.service.AuditLogService;
+import com.okanetransfer.service.AuditService;
+import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.FeeGridService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class FeeGridServiceImpl implements FeeGridService {
 
     private final FeeGridRepository  feeGridRepository;
     private final CorridorRepository corridorRepository;
-    private final AuditLogService    auditLogService;
+    private final AuditService auditLogService;
 
     @Override
     @Transactional(readOnly = true)
