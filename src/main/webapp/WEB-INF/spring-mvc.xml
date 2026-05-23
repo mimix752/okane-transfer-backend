@@ -19,7 +19,11 @@
             expression="com.okanetransfer.config.PersistenceConfig"/>
     </context:component-scan>
 
-    <mvc:annotation-driven/>
+    <mvc:annotation-driven>
+        <mvc:message-converters register-defaults="false">
+            <ref bean="mappingJackson2HttpMessageConverter"/>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
 
     <mvc:resources mapping="/swagger-ui/**" location="classpath:/META-INF/resources/webjars/swagger-ui/"/>
     <mvc:resources mapping="/webjars/**"    location="classpath:/META-INF/resources/webjars/"/>
