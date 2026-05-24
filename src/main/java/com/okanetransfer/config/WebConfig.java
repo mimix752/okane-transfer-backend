@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.*;
@@ -30,11 +31,6 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-        converters.add(mappingJackson2HttpMessageConverter());
-    }
-
-    @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
                 .allowedOrigins("*")
@@ -54,10 +50,18 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResolver(new PathResourceResolver());
         registry.addResourceHandler("swagger-ui.html")
                 .addResourceLocations("classpath:/META-INF/resources/");
+        registry.addResourceHandler("/swagger.html")
+                .addResourceLocations("/");
     }
 
     @Override
-    public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
-        configurer.enable();
-    }
-}
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        ByteArrayHttpMessageConverter byteConverter = new ByteArrayHttpMessageConverter();
+        byteConverter.setSupportedMediaTypes(java.util.Arrays.asList(
+                org.springframework.http.MediaType.APPLICATION_JSON,
+                org.springframework.http.MediaType.APPLICATION_OCTET_STREAM,
+                org.springframework.http.MediaType.ALL
+        ));
+        converters.add(0, byteConverter);
+        converters.add(1, mappingJackson2HttpMessageConverter());
+    }}
