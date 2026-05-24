@@ -5,13 +5,12 @@ import com.okanetransfer.dto.request.UserRequestDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
 import com.okanetransfer.enums.Role;
 import com.okanetransfer.service.AdminUserService;
-import com.okanetransfer.util.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -21,14 +20,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
-@RequiredArgsConstructor
 @Tag(name = "Admin - Users", description = "User management endpoints for administrators")
 public class AdminController {
 
-    private final AdminUserService adminUserService;
+    @Autowired
+    private AdminUserService adminUserService;
 
     @GetMapping("/users")
-    @Operation(summary = "Get all users", description = "Returns paginated list of users, filterable by role and status")
+    @Operation(summary = "Get all users", description = "Returns paginated list of users filterable by role and status")
     public ResponseEntity<ApiResponse<Page<UserResponseDTO>>> getAllUsers(
             @Parameter(description = "Filter by role") @RequestParam(required = false) Role role,
             @Parameter(description = "Filter by active status") @RequestParam(required = false) Boolean active,

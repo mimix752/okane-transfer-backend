@@ -1,16 +1,17 @@
 package com.okanetransfer.service.envoi;
 
 import com.okanetransfer.repository.TransferRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
 
 @Service
-@RequiredArgsConstructor
 public class TransferCodeService {
 
-    private final TransferRepository transferRepository;
+    @Autowired
+    private TransferRepository transferRepository;
+
     private static final String CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int CODE_LENGTH = 8;
     private static final Random RANDOM = new Random();

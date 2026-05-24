@@ -1,8 +1,5 @@
 package com.okanetransfer.service;
 
-import com.okanetransfer.dto.request.CurrencyRequestDTO;
-import com.okanetransfer.dto.response.CurrencyResponseDTO;
-
 import java.util.List;
 
 public interface CurrencyService {

@@ -2,8 +2,6 @@ package com.okanetransfer.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,19 +9,17 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:your_secret_key_min_32_characters_long_for_security}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration:86400000}")
+    @Value("${jwt.expiration.ms}")
     private long jwtExpirationMs;
 
     public String generateToken(Long userId, String username, String role) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        
+
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
@@ -73,7 +69,6 @@ public class JwtTokenProvider {
                     .parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            log.error("JWT validation error: {}", e.getMessage());
             return false;
         }
     }

@@ -13,7 +13,7 @@ import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.AgencyService;
 import com.okanetransfer.service.AuditService;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +22,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class AgencyServiceImpl implements AgencyService {
 
-    private final AgencyRepository agencyRepository;
-    private final AgentRepository agentRepository;
-    private final UserRepository userRepository;
-    private final AuditService auditService;
+    @Autowired
+    private AgencyRepository agencyRepository;
+
+    @Autowired
+    private AgentRepository agentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private AuditService auditService;
 
     @Transactional(readOnly = true)
     @Override
@@ -135,9 +141,7 @@ public class AgencyServiceImpl implements AgencyService {
 
         Agent agent = new Agent();
         agent.setAgency(agency);
-        agent.setRole(Role.AGENT);
         agent.setActive(true);
-        // Agent extends User — on set les champs hérités
         agent.setId(user.getId());
         agent.setUsername(user.getUsername());
         agent.setEmail(user.getEmail());
@@ -195,6 +199,7 @@ public class AgencyServiceImpl implements AgencyService {
         return dto;
     }
 
+    // ─── helpers ───────────────────────────────────────────────
 
     private Agency findOrThrow(Long id) {
         return agencyRepository.findById(id)

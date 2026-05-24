@@ -4,13 +4,12 @@ import com.okanetransfer.dto.request.AgencyRequestDTO;
 import com.okanetransfer.dto.response.AgencyPerformanceResponseDTO;
 import com.okanetransfer.dto.response.AgencyResponseDTO;
 import com.okanetransfer.service.AgencyService;
-import com.okanetransfer.util.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,14 +19,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/agencies")
 @PreAuthorize("hasRole('ADMIN')")
-@RequiredArgsConstructor
 @Tag(name = "Admin - Agencies", description = "Agency management endpoints for administrators")
 public class AgencyController {
 
-    private final AgencyService agencyService;
+    @Autowired
+    private AgencyService agencyService;
 
     @GetMapping
-    @Operation(summary = "Get all agencies", description = "Returns list of agencies, filterable by country and status")
+    @Operation(summary = "Get all agencies", description = "Returns list of agencies filterable by country and status")
     public ResponseEntity<ApiResponse<List<AgencyResponseDTO>>> getAllAgencies(
             @Parameter(description = "Filter by country") @RequestParam(required = false) String country,
             @Parameter(description = "Filter by active status") @RequestParam(required = false) Boolean active) {

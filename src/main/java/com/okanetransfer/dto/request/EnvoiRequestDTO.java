@@ -1,13 +1,9 @@
 package com.okanetransfer.dto.request;
 
 import jakarta.validation.constraints.*;
-import lombok.*;
 
 import java.math.BigDecimal;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class EnvoiRequestDTO {
 
     // ─── Expéditeur ───
@@ -56,4 +52,118 @@ public class EnvoiRequestDTO {
     @NotNull(message = "Corridor ID is required")
     @Positive(message = "Corridor ID must be positive")
     private Long corridorId;
+
+    public EnvoiRequestDTO() {
+    }
+
+    public EnvoiRequestDTO(String senderName, String senderFirstName, String senderCIN, String senderPhone, String senderCountry, String recipientName, String recipientFirstName, String recipientPhone, String recipientCountry, BigDecimal amount, String currency, Long corridorId) {
+        this.senderName = senderName;
+        this.senderFirstName = senderFirstName;
+        this.senderCIN = senderCIN;
+        this.senderPhone = senderPhone;
+        this.senderCountry = senderCountry;
+        this.recipientName = recipientName;
+        this.recipientFirstName = recipientFirstName;
+        this.recipientPhone = recipientPhone;
+        this.recipientCountry = recipientCountry;
+        this.amount = amount;
+        this.currency = currency;
+        this.corridorId = corridorId;
+    }
+
+    public String getSenderName() {
+        return senderName;
+    }
+
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
+    }
+
+    public String getSenderFirstName() {
+        return senderFirstName;
+    }
+
+    public void setSenderFirstName(String senderFirstName) {
+        this.senderFirstName = senderFirstName;
+    }
+
+    public String getSenderCIN() {
+        return senderCIN;
+    }
+
+    public void setSenderCIN(String senderCIN) {
+        this.senderCIN = senderCIN;
+    }
+
+    public String getSenderPhone() {
+        return senderPhone;
+    }
+
+    public void setSenderPhone(String senderPhone) {
+        this.senderPhone = senderPhone;
+    }
+
+    public String getSenderCountry() {
+        return senderCountry;
+    }
+
+    public void setSenderCountry(String senderCountry) {
+        this.senderCountry = senderCountry;
+    }
+
+    public String getRecipientName() {
+        return recipientName;
+    }
+
+    public void setRecipientName(String recipientName) {
+        this.recipientName = recipientName;
+    }
+
+    public String getRecipientFirstName() {
+        return recipientFirstName;
+    }
+
+    public void setRecipientFirstName(String recipientFirstName) {
+        this.recipientFirstName = recipientFirstName;
+    }
+
+    public String getRecipientPhone() {
+        return recipientPhone;
+    }
+
+    public void setRecipientPhone(String recipientPhone) {
+        this.recipientPhone = recipientPhone;
+    }
+
+    public String getRecipientCountry() {
+        return recipientCountry;
+    }
+
+    public void setRecipientCountry(String recipientCountry) {
+        this.recipientCountry = recipientCountry;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public Long getCorridorId() {
+        return corridorId;
+    }
+
+    public void setCorridorId(Long corridorId) {
+        this.corridorId = corridorId;
+    }
 }

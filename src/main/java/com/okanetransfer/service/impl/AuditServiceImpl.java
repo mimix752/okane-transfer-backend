@@ -3,7 +3,7 @@ package com.okanetransfer.service.impl;
 import com.okanetransfer.entity.JournalAudit;
 import com.okanetransfer.repository.AuditRepository;
 import com.okanetransfer.service.AuditService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class AuditServiceImpl implements AuditService {
 
-    private final AuditRepository auditRepository;
+    @Autowired
+    private AuditRepository auditRepository;
 
     @Transactional
     @Override
@@ -36,7 +36,7 @@ public class AuditServiceImpl implements AuditService {
                 action,
                 entityType,
                 entityId,
-                null, // performedAt set by @PrePersist
+                null,
                 details
         );
 

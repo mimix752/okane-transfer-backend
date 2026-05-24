@@ -2,19 +2,12 @@ package com.okanetransfer.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-
 @Entity
 @Table(name = "agency")
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class Agency {
 
     @Id
@@ -40,7 +33,6 @@ public class Agency {
     @Column(name = "current_balance", precision = 15, scale = 2)
     private BigDecimal currentBalance;
 
-    @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
 
@@ -49,6 +41,24 @@ public class Agency {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public Agency() {}
+
+    public Agency(Long id, String name, String address, String country,
+                  String destinationCountry, BigDecimal dailyLimit,
+                  BigDecimal currentBalance, boolean active,
+                  LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.id = id;
+        this.name = name;
+        this.address = address;
+        this.country = country;
+        this.destinationCountry = destinationCountry;
+        this.dailyLimit = dailyLimit;
+        this.currentBalance = currentBalance;
+        this.active = active;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 
     @PrePersist
     protected void onCreate() {
@@ -60,4 +70,34 @@ public class Agency {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
+
+    public String getDestinationCountry() { return destinationCountry; }
+    public void setDestinationCountry(String destinationCountry) { this.destinationCountry = destinationCountry; }
+
+    public BigDecimal getDailyLimit() { return dailyLimit; }
+    public void setDailyLimit(BigDecimal dailyLimit) { this.dailyLimit = dailyLimit; }
+
+    public BigDecimal getCurrentBalance() { return currentBalance; }
+    public void setCurrentBalance(BigDecimal currentBalance) { this.currentBalance = currentBalance; }
+
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

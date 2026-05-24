@@ -3,10 +3,8 @@ package com.okanetransfer.controller.envoi;
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
 import com.okanetransfer.service.envoi.EnvoiService;
-import com.okanetransfer.util.ApiResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,11 +15,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/envoi")
-@RequiredArgsConstructor
-@Slf4j
 public class EnvoiController {
 
-    private final EnvoiService envoiService;
+    @Autowired
+    private EnvoiService envoiService;
 
     @PostMapping
     @PreAuthorize("hasRole('AGENT')")
@@ -29,12 +26,8 @@ public class EnvoiController {
             @Valid @RequestBody EnvoiRequestDTO dto,
             Authentication authentication) {
 
-        log.info("Requête de création d'envoi par l'agent: {}", authentication.getName());
-
-        // Récupérer l'ID de l'agent depuis le token JWT
         Long agentId = extractAgentId(authentication);
 
-        // Créer le transfert
         EnvoiResponseDTO response = envoiService.createTransfer(dto, agentId);
 
         return ResponseEntity

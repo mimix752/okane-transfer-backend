@@ -1,15 +1,11 @@
 package com.okanetransfer.service;
 
 import com.okanetransfer.entity.Transfer;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class NotificationService {
 
     public void sendReceiptBySMS(Transfer transfer, BigDecimal fees) {
@@ -19,7 +15,6 @@ public class NotificationService {
                 transfer.getAmount(),
                 fees
         );
-        log.info("SMS envoyé à {}: {}", transfer.getRecipientPhone(), message);
         // TODO: Intégrer API SMS (Twilio, AWS SNS, etc.)
     }
 
@@ -27,12 +22,12 @@ public class NotificationService {
         String subject = "Reçu de transfert d'argent - Code: " + transfer.getTransferCode();
         String body = String.format(
                 "Bonjour,\n\n" +
-                "Votre transfert a été enregistré avec succès.\n\n" +
-                "Code de retrait: %s\n" +
-                "Montant: %.2f %s\n" +
-                "Frais: %.2f %s\n" +
-                "Montant net: %.2f %s\n\n" +
-                "Cordialement,\nOkane Transfer",
+                        "Votre transfert a été enregistré avec succès.\n\n" +
+                        "Code de retrait: %s\n" +
+                        "Montant: %.2f %s\n" +
+                        "Frais: %.2f %s\n" +
+                        "Montant net: %.2f %s\n\n" +
+                        "Cordialement,\nOkane Transfer",
                 transfer.getTransferCode(),
                 transfer.getAmount(),
                 transfer.getCurrency(),
@@ -41,12 +36,10 @@ public class NotificationService {
                 transfer.getAmount().subtract(fees),
                 transfer.getCurrency()
         );
-        log.info("Email envoyé à {}: {}", recipientEmail, subject);
         // TODO: Intégrer API Email (JavaMail, SendGrid, etc.)
     }
 
     public void printReceipt(String receipt) {
-        log.info("Impression du reçu:\n{}", receipt);
         // TODO: Intégrer imprimante thermique
     }
 }

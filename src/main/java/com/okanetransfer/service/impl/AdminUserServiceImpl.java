@@ -9,7 +9,7 @@ import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.AdminUserService;
 import com.okanetransfer.service.AuditService;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,16 +17,27 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class AdminUserServiceImpl implements AdminUserService {
 
-    private final UserRepository userRepository;
-    private final AuditService auditService;
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private AuditService auditService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponseDTO> getAllUsers(Role role, Boolean active, Pageable pageable) {
+        if (role != null && active != null) {
+            return userRepository.findByRoleAndEnabled(role, active, pageable).map(this::toDTO);
+        } else if (role != null) {
+            return userRepository.findByRole(role, pageable).map(this::toDTO);
+        } else if (active != null) {
+            return userRepository.findByEnabled(active, pageable).map(this::toDTO);
+        }
         return userRepository.findAll(pageable).map(this::toDTO);
     }
 
@@ -116,6 +127,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         );
     }
 
+    // ─── helpers ───────────────────────────────────────────────
 
     private User findOrThrow(Long id) {
         return userRepository.findById(id)

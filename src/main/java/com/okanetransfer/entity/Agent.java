@@ -2,17 +2,11 @@ package com.okanetransfer.entity;
 
 import com.okanetransfer.enums.Role;
 import jakarta.persistence.*;
-import lombok.*;
 
 import java.time.LocalDateTime;
 
-
 @Entity
 @Table(name = "agent")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @PrimaryKeyJoinColumn(name = "id")
 public class Agent extends User {
 
@@ -29,4 +23,71 @@ public class Agent extends User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public Agent() {
+    }
+
+    public Agent(Long id, String username, String email, String password, String phone, Role role, LocalDateTime createdAt, LocalDateTime updatedAt, boolean enabled, Agency agency, boolean active, LocalDateTime createdAt1, LocalDateTime updatedAt1) {
+        super(id, username, email, password, phone, role, createdAt, updatedAt, enabled);
+        this.agency = agency;
+        this.active = active;
+        this.createdAt = createdAt1;
+        this.updatedAt = updatedAt1;
+    }
+
+    public Agency getAgency() {
+        return agency;
+    }
+
+    public void setAgency(Agency agency) {
+        this.agency = agency;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    @Override
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    @Override
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Override
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @Override
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    // ─── Constructeurs ───────────────────────────────────────
+    // public Agent() {}
+    // public Agent(Agency agency, boolean active, LocalDateTime createdAt, LocalDateTime updatedAt) { ... }
+
+    // ─── Getters / Setters ───────────────────────────────────
+    // getAgency() / setAgency(Agency agency)
+    // isActive() / setActive(boolean active)
+    // getCreatedAt() / setCreatedAt(LocalDateTime createdAt)
+    // getUpdatedAt() / setUpdatedAt(LocalDateTime updatedAt)
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

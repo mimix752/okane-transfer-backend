@@ -3,7 +3,6 @@ package com.okanetransfer.service.envoi;
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
 import com.okanetransfer.entity.Agent;
-import com.okanetransfer.entity.Corridor;
 import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Currency;
@@ -14,8 +13,7 @@ import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.FeeGridService;
 import com.okanetransfer.service.NotificationService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,20 +21,28 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class EnvoiService {
 
-    private final TransferRepository transferRepository;
-    private final UserRepository userRepository;
-    private final CorridorRepository corridorRepository;
-    private final FeeGridService feeGridService;
-    private final TransferCodeService transferCodeService;
-    private final NotificationService notificationService;
+    @Autowired
+    private TransferRepository transferRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CorridorRepository corridorRepository;
+
+    @Autowired
+    private FeeGridService feeGridService;
+
+    @Autowired
+    private TransferCodeService transferCodeService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Transactional
     public EnvoiResponseDTO createTransfer(EnvoiRequestDTO dto, Long agentId) {
-        log.info("Création d'un transfert par l'agent {}", agentId);
 
         // 1. Récupérer l'agent (expéditeur)
         User agent = userRepository.findById(agentId)
@@ -56,11 +62,9 @@ public class EnvoiService {
 
         // 5. Calculer les frais
         BigDecimal fees = feeGridService.calculateFee(dto.getCorridorId(), dto.getAmount());
-        log.info("Frais calculés: {} pour montant {}", fees, dto.getAmount());
 
         // 6. Générer le code de retrait unique
         String transferCode = transferCodeService.generateUniqueCode();
-        log.info("Code de retrait généré: {}", transferCode);
 
         // 7. Créer l'entité Transfer
         Transfer transfer = new Transfer();
@@ -78,7 +82,6 @@ public class EnvoiService {
 
         // 8. Sauvegarder en BD
         Transfer savedTransfer = transferRepository.save(transfer);
-        log.info("Transfert créé avec l'ID: {}", savedTransfer.getId());
 
         // 9. Envoyer les notifications
         notificationService.sendReceiptBySMS(transfer, fees);

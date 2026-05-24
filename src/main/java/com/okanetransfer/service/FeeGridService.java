@@ -1,8 +1,5 @@
 package com.okanetransfer.service;
 
-import com.okanetransfer.dto.request.FeeGridRequestDTO;
-import com.okanetransfer.dto.response.FeeGridResponseDTO;
-
 import java.math.BigDecimal;
 import java.util.List;
 

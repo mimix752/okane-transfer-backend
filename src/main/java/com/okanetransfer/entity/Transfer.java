@@ -2,13 +2,11 @@ package com.okanetransfer.entity;
 
 import com.okanetransfer.enums.Currency;
 import com.okanetransfer.enums.TransferStatus;
-import lombok.Data;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
 @Entity
 @Table(name = "transfers")
 public class Transfer {
@@ -51,6 +49,147 @@ public class Transfer {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public Transfer() {
+    }
+
+    public Transfer(Long id, String transferCode, User sender, String recipientName, String recipientPhone, String recipientCountry, String senderCountry, BigDecimal amount, Currency currency, BigDecimal convertedAmount, Currency targetCurrency, TransferStatus status, Agency agency, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.id = id;
+        this.transferCode = transferCode;
+        this.sender = sender;
+        this.recipientName = recipientName;
+        this.recipientPhone = recipientPhone;
+        this.recipientCountry = recipientCountry;
+        this.senderCountry = senderCountry;
+        this.amount = amount;
+        this.currency = currency;
+        this.convertedAmount = convertedAmount;
+        this.targetCurrency = targetCurrency;
+        this.status = status;
+        this.agency = agency;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTransferCode() {
+        return transferCode;
+    }
+
+    public void setTransferCode(String transferCode) {
+        this.transferCode = transferCode;
+    }
+
+    public User getSender() {
+        return sender;
+    }
+
+    public void setSender(User sender) {
+        this.sender = sender;
+    }
+
+    public String getRecipientName() {
+        return recipientName;
+    }
+
+    public void setRecipientName(String recipientName) {
+        this.recipientName = recipientName;
+    }
+
+    public String getRecipientPhone() {
+        return recipientPhone;
+    }
+
+    public void setRecipientPhone(String recipientPhone) {
+        this.recipientPhone = recipientPhone;
+    }
+
+    public String getRecipientCountry() {
+        return recipientCountry;
+    }
+
+    public void setRecipientCountry(String recipientCountry) {
+        this.recipientCountry = recipientCountry;
+    }
+
+    public String getSenderCountry() {
+        return senderCountry;
+    }
+
+    public void setSenderCountry(String senderCountry) {
+        this.senderCountry = senderCountry;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public Currency getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(Currency currency) {
+        this.currency = currency;
+    }
+
+    public BigDecimal getConvertedAmount() {
+        return convertedAmount;
+    }
+
+    public void setConvertedAmount(BigDecimal convertedAmount) {
+        this.convertedAmount = convertedAmount;
+    }
+
+    public Currency getTargetCurrency() {
+        return targetCurrency;
+    }
+
+    public void setTargetCurrency(Currency targetCurrency) {
+        this.targetCurrency = targetCurrency;
+    }
+
+    public TransferStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TransferStatus status) {
+        this.status = status;
+    }
+
+    public Agency getAgency() {
+        return agency;
+    }
+
+    public void setAgency(Agency agency) {
+        this.agency = agency;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     @PrePersist
     void prePersist() { this.createdAt = LocalDateTime.now(); }

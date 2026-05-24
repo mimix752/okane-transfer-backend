@@ -4,29 +4,17 @@ import com.okanetransfer.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class UserRequestDTO {
 
     @NotBlank
     private String username;
 
     @NotBlank
-    private String firstName;
-
-    @NotBlank
-    private String lastName;
-
-    @NotBlank
-    @Email
     private String email;
 
     @NotBlank
+    @Email
     private String phone;
 
     private String cin;
@@ -36,4 +24,64 @@ public class UserRequestDTO {
 
     @NotNull
     private Role role;
+
+    public UserRequestDTO() {
+    }
+
+    public UserRequestDTO(String username, String email, String phone, String cin, String country, Role role) {
+        this.username = username;
+        this.email = email;
+        this.phone = phone;
+        this.cin = cin;
+        this.country = country;
+        this.role = role;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getCin() {
+        return cin;
+    }
+
+    public void setCin(String cin) {
+        this.cin = cin;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
 }

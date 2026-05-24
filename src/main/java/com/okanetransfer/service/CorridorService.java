@@ -1,8 +1,5 @@
 package com.okanetransfer.service;
 
-import com.okanetransfer.dto.request.CorridorRequestDTO;
-import com.okanetransfer.dto.response.CorridorResponseDTO;
-
 import java.util.List;
 
 public interface CorridorService {
