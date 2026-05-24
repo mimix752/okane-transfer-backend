@@ -4,7 +4,6 @@ import com.okanetransfer.dto.response.ReportResponseDTO;
 import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.service.ReportService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,12 +16,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ReportServiceImpl implements ReportService {
 
     private final TransferRepository transferRepository;
 
-    // ── Rapport global ───────────────────────────────────────
+    public ReportServiceImpl(TransferRepository transferRepository) {
+        this.transferRepository = transferRepository;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -34,15 +34,8 @@ public class ReportServiceImpl implements ReportService {
         List<Transfer> transfers =
                 transferRepository.findByCreatedAtBetween(
                         start, end);
-
         return buildReport(from, to, transfers);
     }
-
-    // ── Rapport par corridor ─────────────────────────────────
-    // Format corridor attendu : nom d'agence
-    // Ex: "Agence Casablanca"
-    // Puisque Transfer n'a qu'une seule agence (sendingAgency),
-    // on filtre par nom d'agence
 
     @Override
     @Transactional(readOnly = true)
@@ -63,8 +56,6 @@ public class ReportServiceImpl implements ReportService {
         return buildReport(from, to, transfers);
     }
 
-    // ── Rapport par statut ───────────────────────────────────
-
     @Override
     @Transactional(readOnly = true)
     public ReportResponseDTO getReportByStatus(LocalDate from,
@@ -83,17 +74,13 @@ public class ReportServiceImpl implements ReportService {
         return buildReport(from, to, transfers);
     }
 
-    // ── Construction du rapport ──────────────────────────────
 
     private ReportResponseDTO buildReport(LocalDate from,
                                           LocalDate to,
                                           List<Transfer> transfers) {
-
-        // Cas liste vide
         if (transfers.isEmpty()) {
             return ReportResponseDTO.builder()
-                    .from(from)
-                    .to(to)
+                    .from(from).to(to)
                     .totalVolume(BigDecimal.ZERO)
                     .totalFees(BigDecimal.ZERO)
                     .totalTransfers(0)
@@ -113,109 +100,97 @@ public class ReportServiceImpl implements ReportService {
 
         int totalTransfers = transfers.size();
 
-        BigDecimal averageTransfer = totalVolume
-                .divide(BigDecimal.valueOf(totalTransfers),
-                        2, RoundingMode.HALF_UP);
+        BigDecimal averageTransfer = totalVolume.divide(
+                BigDecimal.valueOf(totalTransfers), 2,
+                RoundingMode.HALF_UP);
 
+        Map<String, Integer> byStatus = new HashMap<>();
+        for (Transfer t : transfers) {
+            String key = t.getStatus().name();
+            byStatus.put(key, byStatus.getOrDefault(key, 0) + 1);
+        }
 
-        Map<String, Integer> byStatus = transfers.stream()
-                .collect(Collectors.groupingBy(
-                        t -> t.getStatus().name(),
-                        Collectors.collectingAndThen(
-                                Collectors.counting(),
-                                Long::intValue
-                        )
-                ));
+        Map<String, BigDecimal> byCurrency = new HashMap<>();
+        for (Transfer t : transfers) {
+            if (t.getCurrency() != null) {
+                String key = t.getCurrency().name();
+                byCurrency.put(key,
+                        byCurrency.getOrDefault(key, BigDecimal.ZERO)
+                                .add(t.getAmount()));
+            }
+        }
 
-        Map<String, BigDecimal> byCurrency = transfers.stream()
-                .filter(t -> t.getCurrency() != null)
-                .collect(Collectors.groupingBy(
-                        t -> t.getCurrency().name(),
-                        Collectors.reducing(
-                                BigDecimal.ZERO,
-                                Transfer::getAmount,
-                                BigDecimal::add
-                        )
-                ));
-
-        Map<Long, List<Transfer>> groupedByAgency = transfers
-                .stream()
-                .filter(t -> t.getAgency() != null)
-                .collect(Collectors.groupingBy(
-                        t -> t.getAgency().getId()
-                ));
+        Map<Long, List<Transfer>> groupedByAgency = new HashMap<>();
+        for (Transfer t : transfers) {
+            if (t.getAgency() != null) {
+                Long agencyId = t.getAgency().getId();
+                groupedByAgency
+                        .computeIfAbsent(agencyId,
+                                k -> new ArrayList<>())
+                        .add(t);
+            }
+        }
 
         List<ReportResponseDTO.AgencyReportLine> byAgency =
-                groupedByAgency.entrySet().stream()
-                        .map(entry -> {
-                            List<Transfer> agencyTransfers =
-                                    entry.getValue();
-                            Transfer first = agencyTransfers.get(0);
+                new ArrayList<>();
+        for (Map.Entry<Long, List<Transfer>> entry
+                : groupedByAgency.entrySet()) {
+            List<Transfer> ag = entry.getValue();
+            Transfer first    = ag.get(0);
 
-                            BigDecimal vol = agencyTransfers.stream()
-                                    .map(Transfer::getAmount)
-                                    .reduce(BigDecimal.ZERO,
-                                            BigDecimal::add);
+            BigDecimal vol = ag.stream()
+                    .map(Transfer::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                            return ReportResponseDTO.AgencyReportLine
-                                    .builder()
-                                    .agencyId(entry.getKey())
-                                    .agencyName(
-                                            first.getAgency().getName())
-                                    .country(
-                                            first.getAgency().getCountry())
-                                    .volume(vol)
-                                    // fees non disponible pour l'instant
-                                    .fees(BigDecimal.ZERO)
-                                    .transferCount(agencyTransfers.size())
-                                    .build();
-                        })
-                        .sorted(Comparator.comparing(
-                                ReportResponseDTO.AgencyReportLine
-                                        ::getVolume).reversed())
-                        .collect(Collectors.toList());
+            byAgency.add(
+                    ReportResponseDTO.AgencyReportLine.builder()
+                            .agencyId(entry.getKey())
+                            .agencyName(first.getAgency().getName())
+                            .country(first.getAgency().getCountry())
+                            .volume(vol)
+                            .fees(BigDecimal.ZERO)
+                            .transferCount(ag.size())
+                            .build()
+            );
+        }
 
-        // 8. Détail par devise (remplace byCorridor
-        //    car ton Transfer n'a pas receivingAgency)
+        byAgency.sort((a, b) ->
+                b.getVolume().compareTo(a.getVolume()));
+
         List<ReportResponseDTO.CorridorReportLine> byCorridor =
-                byCurrency.entrySet().stream()
-                        .map(entry -> {
-                            String currencyCode = entry.getKey();
-                            List<Transfer> ct = transfers.stream()
-                                    .filter(t -> t.getCurrency() != null
-                                            && t.getCurrency().name()
-                                            .equals(currencyCode))
-                                    .collect(Collectors.toList());
+                new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> entry
+                : byCurrency.entrySet()) {
 
-                            return ReportResponseDTO.CorridorReportLine
-                                    .builder()
-                                    .sourceCountry(currencyCode)
-                                    .destinationCountry(
-                                            // targetCurrency si disponible
-                                            ct.get(0).getTargetCurrency()
-                                                    != null
-                                                    ? ct.get(0).getTargetCurrency()
-                                                    .name()
-                                                    : "N/A"
-                                    )
-                                    .label(currencyCode + " → "
-                                            + (ct.get(0).getTargetCurrency()
-                                            != null
-                                            ? ct.get(0)
-                                            .getTargetCurrency()
-                                            .name()
-                                            : "N/A"))
-                                    .volume(entry.getValue())
-                                    .fees(BigDecimal.ZERO)
-                                    .transferCount(ct.size())
-                                    .build();
-                        })
-                        .collect(Collectors.toList());
+            String currencyCode = entry.getKey();
 
-        // 9. Assembler et retourner
+            List<Transfer> ct = transfers.stream()
+                    .filter(t -> t.getCurrency() != null
+                            && t.getCurrency().name()
+                            .equals(currencyCode))
+                    .collect(Collectors.toList());
+
+            String targetCurrencyName = "N/A";
+            if (!ct.isEmpty()
+                    && ct.get(0).getTargetCurrency() != null) {
+                targetCurrencyName =
+                        ct.get(0).getTargetCurrency().name();
+            }
+
+            byCorridor.add(
+                    ReportResponseDTO.CorridorReportLine.builder()
+                            .sourceCountry(currencyCode)
+                            .destinationCountry(targetCurrencyName)
+                            .label(currencyCode + " → " + targetCurrencyName)
+                            .volume(entry.getValue())
+                            .fees(BigDecimal.ZERO)
+                            .transferCount(ct.size())
+                            .build()
+            );
+        }
+
         return ReportResponseDTO.builder()
-                .from(from)
-                .to(to)
+                .from(from).to(to)
                 .totalVolume(totalVolume)
                 .totalFees(totalFees)
                 .totalTransfers(totalTransfers)
@@ -225,5 +200,11 @@ public class ReportServiceImpl implements ReportService {
                 .byAgency(byAgency)
                 .byCorridor(byCorridor)
                 .build();
+    }
+
+    private boolean matchesCorridor(Transfer t, String corridor) {
+        if (t.getAgency() == null) return false;
+        return t.getAgency().getName()
+                .equalsIgnoreCase(corridor);
     }
 }

@@ -9,7 +9,6 @@ import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.CurrencyRepository;
 import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.CorridorService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,13 +16,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class CorridorServiceImpl implements CorridorService {
 
-    private final CorridorRepository  corridorRepository;
-    private final CurrencyRepository  currencyRepository;
+    private final CorridorRepository corridorRepository;
+    private final CurrencyRepository currencyRepository;
     private final AuditService auditLogService;
 
+    public CorridorServiceImpl(CorridorRepository corridorRepository,
+                               CurrencyRepository currencyRepository,
+                               AuditService auditLogService) {
+        this.corridorRepository = corridorRepository;
+        this.currencyRepository = currencyRepository;
+        this.auditLogService    = auditLogService;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -60,34 +65,29 @@ public class CorridorServiceImpl implements CorridorService {
         return CorridorResponseDTO.fromEntity(findOrThrow(id));
     }
 
-
     @Override
     @Transactional
     public CorridorResponseDTO create(CorridorRequestDTO dto,
                                       String adminIp) {
-
         String src  = dto.getSourceCountry().toUpperCase();
         String dest = dto.getDestinationCountry().toUpperCase();
 
         if (src.equals(dest)) {
             throw new IllegalArgumentException(
-                    "Source and destination countries must be different"
-            );
+                    "Source and destination countries must be different");
         }
 
         if (corridorRepository
                 .existsBySourceCountryAndDestinationCountry(
                         src, dest)) {
             throw new IllegalArgumentException(
-                    "Corridor " + src + " → " + dest
-                            + " already exists"
-            );
+                    "Corridor " + src + "→" + dest + " already exists");
         }
 
-        Currency srcCurrency  = findCurrencyOrThrow(
-                dto.getSourceCurrencyId());
-        Currency destCurrency = findCurrencyOrThrow(
-                dto.getDestinationCurrencyId());
+        Currency srcCurrency  =
+                findCurrencyOrThrow(dto.getSourceCurrencyId());
+        Currency destCurrency =
+                findCurrencyOrThrow(dto.getDestinationCurrencyId());
 
         Corridor corridor = Corridor.builder()
                 .sourceCountry(src)
@@ -95,17 +95,14 @@ public class CorridorServiceImpl implements CorridorService {
                 .sourceCurrency(srcCurrency)
                 .destinationCurrency(destCurrency)
                 .active(dto.getActive() != null
-                        ? dto.getActive()
-                        : true)
+                        ? dto.getActive() : true)
                 .build();
 
         Corridor saved = corridorRepository.save(corridor);
 
-        auditLogService.logAction(
-                "SYSTEM", "CREATE_CORRIDOR", "corridor",
-                saved.getId(), null,
-                src + "→" + dest, adminIp
-        );
+        auditLogService.logAction("SYSTEM", "CREATE_CORRIDOR",
+                "corridor", saved.getId(), null,
+                src + "→" + dest, adminIp);
 
         return CorridorResponseDTO.fromEntity(saved);
     }
@@ -115,24 +112,20 @@ public class CorridorServiceImpl implements CorridorService {
     public CorridorResponseDTO update(Long id,
                                       CorridorRequestDTO dto,
                                       String adminIp) {
-
         Corridor corridor = findOrThrow(id);
         String src  = dto.getSourceCountry().toUpperCase();
         String dest = dto.getDestinationCountry().toUpperCase();
 
         if (src.equals(dest)) {
             throw new IllegalArgumentException(
-                    "Source and destination countries must be different"
-            );
+                    "Source and destination countries must be different");
         }
 
         if (corridorRepository
                 .existsBySourceCountryAndDestinationCountryAndIdNot(
                         src, dest, id)) {
             throw new IllegalArgumentException(
-                    "Corridor " + src + " → " + dest
-                            + " already exists"
-            );
+                    "Corridor " + src + "→" + dest + " already exists");
         }
 
         String oldValue = corridor.getSourceCountry()
@@ -150,10 +143,9 @@ public class CorridorServiceImpl implements CorridorService {
 
         Corridor updated = corridorRepository.save(corridor);
 
-        auditLogService.logAction(
-                "SYSTEM", "UPDATE_CORRIDOR", "corridor",
-                id, oldValue, src + "→" + dest, adminIp
-        );
+        auditLogService.logAction("SYSTEM", "UPDATE_CORRIDOR",
+                "corridor", id, oldValue,
+                src + "→" + dest, adminIp);
 
         return CorridorResponseDTO.fromEntity(updated);
     }
@@ -166,29 +158,24 @@ public class CorridorServiceImpl implements CorridorService {
         corridor.setActive(!corridor.isActive());
         corridorRepository.save(corridor);
 
-        auditLogService.logAction(
-                "SYSTEM",
+        auditLogService.logAction("SYSTEM",
                 corridor.isActive()
                         ? "ACTIVATE_CORRIDOR"
                         : "DEACTIVATE_CORRIDOR",
                 "corridor", id,
                 "active=" + oldStatus,
-                "active=" + corridor.isActive(),
-                adminIp
-        );
+                "active=" + corridor.isActive(), adminIp);
     }
 
     private Corridor findOrThrow(Long id) {
         return corridorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Corridor not found with id: " + id
-                ));
+                        "Corridor not found with id: " + id));
     }
 
     private Currency findCurrencyOrThrow(Long id) {
         return currencyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Currency not found with id: " + id
-                ));
+                        "Currency not found with id: " + id));
     }
 }

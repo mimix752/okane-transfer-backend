@@ -8,9 +8,7 @@ import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.FeeGridRepository;
 import com.okanetransfer.service.AuditService;
-import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.FeeGridService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,19 +18,24 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class FeeGridServiceImpl implements FeeGridService {
 
     private final FeeGridRepository  feeGridRepository;
     private final CorridorRepository corridorRepository;
     private final AuditService auditLogService;
 
+    public FeeGridServiceImpl(FeeGridRepository feeGridRepository,
+                              CorridorRepository corridorRepository,
+                              AuditService auditLogService) {
+        this.feeGridRepository  = feeGridRepository;
+        this.corridorRepository = corridorRepository;
+        this.auditLogService    = auditLogService;
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<FeeGridResponseDTO> getByCorridor(Long corridorId) {
-
         findCorridorOrThrow(corridorId);
-
         return feeGridRepository
                 .findByCorridor_IdAndActive(corridorId, true)
                 .stream()
@@ -46,29 +49,24 @@ public class FeeGridServiceImpl implements FeeGridService {
         return FeeGridResponseDTO.fromEntity(findOrThrow(id));
     }
 
-
     @Override
     @Transactional
     public FeeGridResponseDTO create(FeeGridRequestDTO dto,
                                      String adminIp) {
-
-        Corridor corridor = findCorridorOrThrow(dto.getCorridorId());
+        Corridor corridor =
+                findCorridorOrThrow(dto.getCorridorId());
 
         validateAmountRange(dto.getMinAmount(), dto.getMaxAmount());
-
         validateShares(dto.getAgencyShare(), dto.getCentralShare());
 
         if (feeGridRepository.existsOverlap(
                 dto.getCorridorId(),
                 dto.getMinAmount(),
-                dto.getMaxAmount(),
-                -1L)) {
+                dto.getMaxAmount(), -1L)) {
             throw new IllegalArgumentException(
-                    "Amount range ["
-                            + dto.getMinAmount() + " - " + dto.getMaxAmount()
-                            + "] overlaps with an existing fee grid"
-                            + " on this corridor"
-            );
+                    "Amount range [" + dto.getMinAmount()
+                            + " - " + dto.getMaxAmount()
+                            + "] overlaps with an existing fee grid");
         }
 
         FeeGrid feeGrid = FeeGrid.builder()
@@ -80,20 +78,16 @@ public class FeeGridServiceImpl implements FeeGridService {
                 .agencyShare(dto.getAgencyShare())
                 .centralShare(dto.getCentralShare())
                 .active(dto.getActive() != null
-                        ? dto.getActive()
-                        : true)
+                        ? dto.getActive() : true)
                 .build();
 
         FeeGrid saved = feeGridRepository.save(feeGrid);
 
-        auditLogService.logAction(
-                "SYSTEM", "CREATE_FEEGRID", "fee_grid",
-                saved.getId(), null,
+        auditLogService.logAction("SYSTEM", "CREATE_FEEGRID",
+                "fee_grid", saved.getId(), null,
                 "corridor=" + dto.getCorridorId()
                         + ", range=[" + dto.getMinAmount()
-                        + "-" + dto.getMaxAmount() + "]",
-                adminIp
-        );
+                        + "-" + dto.getMaxAmount() + "]", adminIp);
 
         return FeeGridResponseDTO.fromEntity(saved);
     }
@@ -103,23 +97,19 @@ public class FeeGridServiceImpl implements FeeGridService {
     public FeeGridResponseDTO update(Long id,
                                      FeeGridRequestDTO dto,
                                      String adminIp) {
-
-        // 1. Vérifier existence
         FeeGrid feeGrid = findOrThrow(id);
-        Corridor corridor = findCorridorOrThrow(dto.getCorridorId());
+        Corridor corridor =
+                findCorridorOrThrow(dto.getCorridorId());
 
-        // 2. Valider plage et parts
         validateAmountRange(dto.getMinAmount(), dto.getMaxAmount());
         validateShares(dto.getAgencyShare(), dto.getCentralShare());
 
         if (feeGridRepository.existsOverlap(
                 dto.getCorridorId(),
                 dto.getMinAmount(),
-                dto.getMaxAmount(),
-                id)) {
+                dto.getMaxAmount(), id)) {
             throw new IllegalArgumentException(
-                    "Amount range overlaps with an existing fee grid"
-            );
+                    "Amount range overlaps with existing fee grid");
         }
 
         String oldValue = "range=["
@@ -140,13 +130,10 @@ public class FeeGridServiceImpl implements FeeGridService {
 
         FeeGrid updated = feeGridRepository.save(feeGrid);
 
-        auditLogService.logAction(
-                "SYSTEM", "UPDATE_FEEGRID", "fee_grid",
-                id, oldValue,
+        auditLogService.logAction("SYSTEM", "UPDATE_FEEGRID",
+                "fee_grid", id, oldValue,
                 "range=[" + dto.getMinAmount()
-                        + "-" + dto.getMaxAmount() + "]",
-                adminIp
-        );
+                        + "-" + dto.getMaxAmount() + "]", adminIp);
 
         return FeeGridResponseDTO.fromEntity(updated);
     }
@@ -159,36 +146,29 @@ public class FeeGridServiceImpl implements FeeGridService {
         feeGrid.setActive(!feeGrid.isActive());
         feeGridRepository.save(feeGrid);
 
-        auditLogService.logAction(
-                "SYSTEM",
+        auditLogService.logAction("SYSTEM",
                 feeGrid.isActive()
                         ? "ACTIVATE_FEEGRID"
                         : "DEACTIVATE_FEEGRID",
                 "fee_grid", id,
                 "active=" + oldStatus,
-                "active=" + feeGrid.isActive(),
-                adminIp
-        );
+                "active=" + feeGrid.isActive(), adminIp);
     }
 
     @Override
     @Transactional(readOnly = true)
     public FeeGridResponseDTO simulate(Long corridorId,
                                        BigDecimal amount) {
-
         FeeGrid feeGrid = feeGridRepository
                 .findApplicable(corridorId, amount)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No fee grid found for amount "
-                                + amount + " on corridor " + corridorId
-                ));
+                                + amount + " on corridor " + corridorId));
 
         FeeGridResponseDTO dto =
                 FeeGridResponseDTO.fromEntity(feeGrid);
-
-        BigDecimal fee = computeFee(feeGrid, amount);
-        dto.setSimulatedFeeForMaxAmount(fee);
-
+        dto.setSimulatedFeeForMaxAmount(
+                computeFee(feeGrid, amount));
         return dto;
     }
 
@@ -196,13 +176,10 @@ public class FeeGridServiceImpl implements FeeGridService {
     @Transactional(readOnly = true)
     public BigDecimal calculateFee(Long corridorId,
                                    BigDecimal amount) {
-
         FeeGrid feeGrid = feeGridRepository
                 .findApplicable(corridorId, amount)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "No fee grid found for amount " + amount
-                ));
-
+                        "No fee grid found for amount " + amount));
         return computeFee(feeGrid, amount);
     }
 
@@ -221,8 +198,7 @@ public class FeeGridServiceImpl implements FeeGridService {
                                      BigDecimal max) {
         if (min.compareTo(max) >= 0) {
             throw new IllegalArgumentException(
-                    "minAmount must be strictly less than maxAmount"
-            );
+                    "minAmount must be strictly less than maxAmount");
         }
     }
 
@@ -231,23 +207,20 @@ public class FeeGridServiceImpl implements FeeGridService {
         BigDecimal total = agencyShare.add(centralShare);
         if (total.compareTo(BigDecimal.valueOf(100)) != 0) {
             throw new IllegalArgumentException(
-                    "agencyShare + centralShare must equal 100. "
-                            + "Got: " + total
-            );
+                    "agencyShare + centralShare must equal 100. Got: "
+                            + total);
         }
     }
 
     private FeeGrid findOrThrow(Long id) {
         return feeGridRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "FeeGrid not found with id: " + id
-                ));
+                        "FeeGrid not found with id: " + id));
     }
 
     private Corridor findCorridorOrThrow(Long id) {
         return corridorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Corridor not found with id: " + id
-                ));
+                        "Corridor not found with id: " + id));
     }
 }

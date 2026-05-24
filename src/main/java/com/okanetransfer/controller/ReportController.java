@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +19,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/reports")
 @PreAuthorize("hasRole('ADMIN')")
-@RequiredArgsConstructor
 @Tag(
         name        = "Reports",
         description = "Admin financial reports and statistics"
@@ -30,12 +28,14 @@ public class ReportController {
 
     private final ReportService reportService;
 
+    public ReportController(ReportService reportService) {
+        this.reportService = reportService;
+    }
+
     @Operation(
             summary     = "Global financial report",
-            description = "Returns a complete financial report "
-                    + "for a given period. "
-                    + "Includes total volume, fees, "
-                    + "breakdown by agency and by currency."
+            description = "Complete report for a period: volume, fees, "
+                    + "breakdown by agency and currency."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -49,18 +49,14 @@ public class ReportController {
     public ResponseEntity<ApiResponse<ReportResponseDTO>>
     getGlobalReport(
 
-            @Parameter(
-                    description = "Start date. Format: yyyy-MM-dd",
-                    example     = "2024-01-01"
-            )
+            @Parameter(description = "Start date yyyy-MM-dd",
+                    example = "2024-01-01")
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate from,
 
-            @Parameter(
-                    description = "End date. Format: yyyy-MM-dd",
-                    example     = "2024-01-31"
-            )
+            @Parameter(description = "End date yyyy-MM-dd",
+                    example = "2024-01-31")
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate to) {
@@ -71,15 +67,12 @@ public class ReportController {
                 reportService.getGlobalReport(from, to);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Report generated", report)
-        );
+                ApiResponse.success("Report generated", report));
     }
 
     @Operation(
-            summary     = "Report filtered by corridor",
-            description = "Returns a report filtered by a specific "
-                    + "corridor. corridor param = agency name. "
-                    + "Ex: 'Agence Casablanca'"
+            summary     = "Report filtered by corridor / agency",
+            description = "Returns report filtered by agency name."
     )
     @GetMapping("/by-corridor")
     public ResponseEntity<ApiResponse<ReportResponseDTO>>
@@ -93,10 +86,8 @@ public class ReportController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate to,
 
-            @Parameter(
-                    description = "Agency name or corridor code",
-                    example     = "Agence Casablanca"
-            )
+            @Parameter(description = "Agency name",
+                    example = "Agence Casablanca")
             @RequestParam String corridor) {
 
         validateDateRange(from, to);
@@ -106,16 +97,13 @@ public class ReportController {
                         from, to, corridor);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Corridor report generated", report)
-        );
+                ApiResponse.success("Corridor report generated",
+                        report));
     }
 
     @Operation(
             summary     = "Report filtered by transfer status",
-            description = "Returns a report filtered by status. "
-                    + "Allowed values: "
-                    + "PENDING, VALIDATED, PAID, "
+            description = "Allowed: PENDING, VALIDATED, PAID, "
                     + "CANCELLED, EXPIRED"
     )
     @ApiResponses({
@@ -138,10 +126,8 @@ public class ReportController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate to,
 
-            @Parameter(
-                    description = "Transfer status",
-                    example     = "PAID"
-            )
+            @Parameter(description = "Transfer status",
+                    example = "PAID")
             @RequestParam String status) {
 
         validateDateRange(from, to);
@@ -151,16 +137,12 @@ public class ReportController {
                 reportService.getReportByStatus(from, to, status);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Status report generated", report)
-        );
+                ApiResponse.success("Status report generated", report));
     }
 
     @Operation(
             summary     = "Revenue report",
-            description = "Returns total revenue and fees "
-                    + "collected for a period. "
-                    + "Only includes PAID transfers."
+            description = "Total revenue for PAID transfers only."
     )
     @GetMapping("/revenue")
     public ResponseEntity<ApiResponse<ReportResponseDTO>>
@@ -180,21 +162,17 @@ public class ReportController {
                 reportService.getReportByStatus(from, to, "PAID");
 
         return ResponseEntity.ok(
-                ApiResponse.success("Revenue report generated", report)
-        );
+                ApiResponse.success("Revenue report generated", report));
     }
 
     private void validateDateRange(LocalDate from, LocalDate to) {
         if (from.isAfter(to)) {
             throw new IllegalArgumentException(
-                    "'from' date must be before or equal to 'to' date"
-            );
+                    "'from' date must be before or equal to 'to' date");
         }
-
         if (from.plusMonths(12).isBefore(to)) {
             throw new IllegalArgumentException(
-                    "Date range cannot exceed 12 months"
-            );
+                    "Date range cannot exceed 12 months");
         }
     }
 
@@ -206,8 +184,7 @@ public class ReportController {
         if (!allowed.contains(status.toUpperCase())) {
             throw new IllegalArgumentException(
                     "Invalid status: '" + status
-                            + "'. Allowed: " + allowed
-            );
+                            + "'. Allowed: " + allowed);
         }
     }
 }
