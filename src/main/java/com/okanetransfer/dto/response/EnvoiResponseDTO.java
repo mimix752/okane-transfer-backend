@@ -33,7 +33,7 @@ public class EnvoiResponseDTO {
                 .transferCode(transfer.getTransferCode())
                 .senderName(transfer.getSender().getUsername())
                 .recipientName(transfer.getRecipientName())
-                .recipientCountry(transfer.getRecipientPhone())
+                .recipientCountry(transfer.getRecipientCountry())
                 .amount(transfer.getAmount())
                 .currency(transfer.getCurrency().toString())
                 .fees(fees)
@@ -46,9 +46,7 @@ public class EnvoiResponseDTO {
 
     private static String generateReceipt(Transfer transfer, BigDecimal fees, BigDecimal netAmount) {
         return String.format(
-
-                "         REÇU DE TRANSFERT D'ARGENT"+
-
+                "         REÇU DE TRANSFERT D'ARGENT\n" +
                 "Code de retrait: %s\n" +
                 "Expéditeur: %s\n" +
                 "Bénéficiaire: %s\n" +

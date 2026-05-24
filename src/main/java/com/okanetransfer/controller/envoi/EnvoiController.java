@@ -13,6 +13,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/envoi")
 @RequiredArgsConstructor
@@ -44,8 +46,14 @@ public class EnvoiController {
     }
 
     private Long extractAgentId(Authentication authentication) {
-        // TODO: Implémenter l'extraction de l'ID depuis le JWT
-        // Pour l'instant, retourner 1 (à adapter selon votre implémentation JWT)
-        return 1L;
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Map) {
+            Map<String, Object> claims = (Map<String, Object>) principal;
+            Object userId = claims.get("userId");
+            if (userId != null) {
+                return Long.parseLong(userId.toString());
+            }
+        }
+        throw new IllegalArgumentException("Unable to extract agent ID from token");
     }
 }

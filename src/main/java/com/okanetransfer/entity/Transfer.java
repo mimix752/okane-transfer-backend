@@ -26,6 +26,8 @@ public class Transfer {
 
     private String recipientName;
     private String recipientPhone;
+    private String recipientCountry;
+    private String senderCountry;
 
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;

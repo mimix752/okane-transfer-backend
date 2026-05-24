@@ -68,6 +68,8 @@ public class EnvoiService {
         transfer.setSender(agent);
         transfer.setRecipientName(dto.getRecipientName() + " " + dto.getRecipientFirstName());
         transfer.setRecipientPhone(dto.getRecipientPhone());
+        transfer.setRecipientCountry(dto.getRecipientCountry());
+        transfer.setSenderCountry(dto.getSenderCountry());
         transfer.setAmount(dto.getAmount());
         transfer.setCurrency(Currency.valueOf(dto.getCurrency()));
         transfer.setStatus(TransferStatus.PENDING);
