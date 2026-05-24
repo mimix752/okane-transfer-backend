@@ -12,10 +12,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
 @RestController
 @RequestMapping("/api/client")
 @PreAuthorize("hasRole('CLIENT')")
 @Tag(name = "Client", description = "Espace client self-service")
+@SecurityRequirement(name = "bearer-key")
 public class ClientController {
 
     @Autowired
