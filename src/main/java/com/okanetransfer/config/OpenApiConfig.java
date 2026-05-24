@@ -2,11 +2,12 @@ package com.okanetransfer.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class SwaggerConfig {
+public class OpenApiConfig {
 
     @Bean
     public OpenAPI openAPI() {
@@ -15,5 +16,13 @@ public class SwaggerConfig {
                         .title("Okane Transfer API")
                         .version("1.0")
                         .description("API de transfert d'argent"));
+    }
+
+    @Bean
+    public GroupedOpenApi publicApi() {
+        return GroupedOpenApi.builder()
+                .group("okane-transfer")
+                .pathsToMatch("/api/**")
+                .build();
     }
 }

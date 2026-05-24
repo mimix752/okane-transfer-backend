@@ -5,6 +5,7 @@ import com.okanetransfer.dto.request.UserRequestDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
 import com.okanetransfer.enums.Role;
 import com.okanetransfer.service.AdminUserService;
+import com.okanetransfer.util.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

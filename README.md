@@ -10,7 +10,6 @@ Application de transfert d'argent — Spring MVC 6 (sans Spring Boot), Hibernate
 - PostgreSQL 16 + HikariCP 5.1
 - JWT (jjwt 0.12.6)
 - SpringDoc OpenAPI 2.6 (Swagger UI)
-- Lombok 1.18.34
 - Déploiement WAR sur Tomcat 10+
 
 ## Prérequis

@@ -4,6 +4,7 @@ import com.okanetransfer.dto.request.LoginRequestDTO;
 import com.okanetransfer.dto.request.RegisterRequestDTO;
 import com.okanetransfer.dto.response.AuthResponseDTO;
 import com.okanetransfer.service.AuthService;
+import com.okanetransfer.util.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

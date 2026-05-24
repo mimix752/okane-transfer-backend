@@ -3,6 +3,7 @@ package com.okanetransfer.service.envoi;
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
 import com.okanetransfer.entity.Agent;
+import com.okanetransfer.entity.Corridor;
 import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Currency;

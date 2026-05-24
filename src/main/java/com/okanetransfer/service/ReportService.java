@@ -1,5 +1,7 @@
 package com.okanetransfer.service;
 
+import com.okanetransfer.dto.response.ReportResponseDTO;
+
 import java.time.LocalDate;
 
 public interface ReportService {

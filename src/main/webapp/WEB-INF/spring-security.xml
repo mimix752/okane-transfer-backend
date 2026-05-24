@@ -5,4 +5,5 @@
            http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!-- Security configured via Java: com.okanetransfer.config.SecurityConfig -->
+    <!-- SecurityConfig est scanné par applicationContext.xml (ROOT context)   -->
 </beans>
