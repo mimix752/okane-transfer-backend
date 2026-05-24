@@ -27,16 +27,6 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponseDTO> getAllUsers(Role role, Boolean active, Pageable pageable) {
-        if (role != null && active != null) {
-            return userRepository.findByRoleAndEnabled(role, active, pageable)
-                    .map(this::toDTO);
-        } else if (role != null) {
-            return userRepository.findByRole(role, pageable)
-                    .map(this::toDTO);
-        } else if (active != null) {
-            return userRepository.findByEnabled(active, pageable)
-                    .map(this::toDTO);
-        }
         return userRepository.findAll(pageable).map(this::toDTO);
     }
 

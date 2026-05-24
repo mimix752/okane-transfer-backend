@@ -77,7 +77,7 @@ public class CurrencyController {
             @PathVariable Long id) {
 
         return ResponseEntity.ok(
-                ApiResponse.success(currencyService.getById(id))
+                ApiResponse.success("Currency retrieved", currencyService.getById(id))
         );
     }
 
@@ -92,7 +92,7 @@ public class CurrencyController {
             @PathVariable String code) {
 
         return ResponseEntity.ok(
-                ApiResponse.success(currencyService.getByCode(code))
+                ApiResponse.success("Currency retrieved", currencyService.getByCode(code))
         );
     }
 
@@ -222,7 +222,7 @@ public class CurrencyController {
             @PathVariable Long id) {
 
         return ResponseEntity.ok(
-                ApiResponse.success(corridorService.getById(id))
+                ApiResponse.success("Corridor retrieved", corridorService.getById(id))
         );
     }
 
