@@ -12,6 +12,7 @@ import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.repository.UserRepository;
+import com.okanetransfer.service.AgencyService;
 import com.okanetransfer.service.FeeGridService;
 import com.okanetransfer.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,9 @@ public class EnvoiService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private AgencyService agencyService;
+
     @Transactional
     public EnvoiResponseDTO createTransfer(EnvoiRequestDTO dto, Long agentId) {
 
@@ -63,11 +67,16 @@ public class EnvoiService {
 
         // 5. Calculer les frais
         BigDecimal fees = feeGridService.calculateFee(dto.getCorridorId(), dto.getAmount());
+        BigDecimal totalAmount = dto.getAmount().add(fees);
 
-        // 6. Générer le code de retrait unique
+        // 6. Vérifier le solde de l'agence
+        Long agencyId = ((Agent) agent).getAgency().getId();
+        agencyService.checkAndDeductBalance(agencyId, totalAmount);
+
+        // 7. Générer le code de retrait unique
         String transferCode = transferCodeService.generateUniqueCode();
 
-        // 7. Créer l'entité Transfer
+        // 8. Créer l'entité Transfer
         Transfer transfer = new Transfer();
         transfer.setTransferCode(transferCode);
         transfer.setSender(agent);
@@ -81,14 +90,14 @@ public class EnvoiService {
         transfer.setAgency(((Agent) agent).getAgency());
         transfer.setCreatedAt(LocalDateTime.now());
 
-        // 8. Sauvegarder en BD
+        // 9. Sauvegarder en BD
         Transfer savedTransfer = transferRepository.save(transfer);
 
-        // 9. Envoyer les notifications
+        // 10. Envoyer les notifications
         notificationService.sendReceiptBySMS(transfer, fees);
         notificationService.sendReceiptByEmail(transfer, fees, agent.getEmail());
 
-        // 10. Retourner la réponse
+        // 11. Retourner la réponse
         return EnvoiResponseDTO.fromEntity(savedTransfer, fees);
     }
 

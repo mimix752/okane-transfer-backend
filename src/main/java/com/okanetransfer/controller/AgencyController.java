@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -105,5 +106,15 @@ public class AgencyController {
 
         AgencyPerformanceResponseDTO result = agencyService.getPerformance(id);
         return ResponseEntity.ok(ApiResponse.success("Performance retrieved successfully", result));
+    }
+
+    @PostMapping("/{id}/balance")
+    @Operation(summary = "Add balance to agency")
+    public ResponseEntity<ApiResponse<Void>> addBalance(
+            @Parameter(description = "Agency ID") @PathVariable Long id,
+            @Parameter(description = "Amount to add") @RequestParam BigDecimal amount) {
+
+        agencyService.addBalance(id, amount);
+        return ResponseEntity.ok(ApiResponse.success("Balance added successfully", null));
     }
 }

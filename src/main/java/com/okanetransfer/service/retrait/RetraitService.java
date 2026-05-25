@@ -6,6 +6,7 @@ import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.TransferNotFoundException;
 import com.okanetransfer.repository.TransferRepository;
+import com.okanetransfer.service.AgencyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ public class RetraitService {
 
     @Autowired private TransferRepository transferRepository;
     @Autowired private VerificationRetraitService verificationService;
+    @Autowired private AgencyService agencyService;
 
     @Transactional
     public RetraitResponseDTO retirer(RetraitRequestDTO dto) {
@@ -24,6 +26,9 @@ public class RetraitService {
                 .orElseThrow(() -> new TransferNotFoundException("Transfert introuvable: " + dto.getTransferCode()));
 
         verificationService.verifier(t, dto.getRecipientPhone());
+
+        // Restaurer le solde à l'agence de destination lors du retrait
+        agencyService.addBalance(t.getAgency().getId(), t.getAmount());
 
         t.setStatus(TransferStatus.PAID);
         return toDTO(t);

@@ -5,6 +5,7 @@ import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.TransferRepository;
+import com.okanetransfer.service.AgencyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,9 @@ public class TransferService {
 
     @Autowired
     private TransferRepository transferRepository;
+
+    @Autowired
+    private AgencyService agencyService;
 
     @Transactional(readOnly = true)
     public TransferResponseDTO getById(Long id) {
@@ -60,6 +64,13 @@ public class TransferService {
     public TransferResponseDTO updateStatus(Long id, TransferStatus newStatus) {
         Transfer transfer = transferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Transfer not found"));
+
+        TransferStatus oldStatus = transfer.getStatus();
+        
+        // Restaurer le solde si le transfert est annulé
+        if (newStatus == TransferStatus.CANCELLED && oldStatus == TransferStatus.PENDING) {
+            agencyService.addBalance(transfer.getAgency().getId(), transfer.getAmount());
+        }
 
         transfer.setStatus(newStatus);
         Transfer updated = transferRepository.save(transfer);

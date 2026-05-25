@@ -4,6 +4,7 @@ import com.okanetransfer.dto.request.AgencyRequestDTO;
 import com.okanetransfer.dto.response.AgencyPerformanceResponseDTO;
 import com.okanetransfer.dto.response.AgencyResponseDTO;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface AgencyService {
@@ -23,4 +24,8 @@ public interface AgencyService {
     void removeAgent(Long agencyId, Long userId, String adminIp);
 
     AgencyPerformanceResponseDTO getPerformance(Long id);
+
+    void checkAndDeductBalance(Long agencyId, BigDecimal amount);
+
+    void addBalance(Long agencyId, BigDecimal amount);
 }

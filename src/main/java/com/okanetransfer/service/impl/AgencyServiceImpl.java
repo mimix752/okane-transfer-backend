@@ -7,6 +7,7 @@ import com.okanetransfer.entity.Agency;
 import com.okanetransfer.entity.Agent;
 import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Role;
+import com.okanetransfer.exception.InsufficientFundsException;
 import com.okanetransfer.repository.AgencyRepository;
 import com.okanetransfer.repository.AgentRepository;
 import com.okanetransfer.repository.UserRepository;
@@ -238,6 +239,31 @@ public class AgencyServiceImpl implements AgencyService {
         return dto;
     }
 
+    @Transactional
+    @Override
+    public void checkAndDeductBalance(Long agencyId, BigDecimal amount) {
+        Agency agency = findOrThrow(agencyId);
+        
+        if (agency.getCurrentBalance().compareTo(amount) < 0) {
+            throw new InsufficientFundsException(
+                "Solde insuffisant dans l'agence " + agency.getName() + 
+                ". Solde disponible: " + agency.getCurrentBalance() + 
+                ", Montant requis: " + amount
+            );
+        }
+        
+        agency.setCurrentBalance(agency.getCurrentBalance().subtract(amount));
+        agencyRepository.save(agency);
+    }
+
+    @Transactional
+    @Override
+    public void addBalance(Long agencyId, BigDecimal amount) {
+        Agency agency = findOrThrow(agencyId);
+        agency.setCurrentBalance(agency.getCurrentBalance().add(amount));
+        agencyRepository.save(agency);
+    }
+
     // ─── Helpers ───────────────────────────────────────────────
 
     private Agency findOrThrow(Long id) {
@@ -257,6 +283,7 @@ public class AgencyServiceImpl implements AgencyService {
         dto.setCountry(agency.getCountry());
         dto.setAgentCount(agentCount);
         dto.setDailyLimit(agency.getDailyLimit());
+        dto.setCurrentBalance(agency.getCurrentBalance());
         dto.setActive(agency.isActive());
 
         return dto;
