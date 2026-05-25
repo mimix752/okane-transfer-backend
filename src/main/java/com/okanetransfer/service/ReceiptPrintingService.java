@@ -133,6 +133,7 @@ public class ReceiptPrintingService {
     private String getStatusText(com.okanetransfer.enums.TransferStatus status) {
         return switch (status) {
             case PENDING -> "En attente";
+            case VALIDATED -> "Validé";
             case PAID -> "Payé";
             case CANCELLED -> "Annulé";
             case EXPIRED -> "Expiré";

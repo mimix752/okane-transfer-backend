@@ -40,7 +40,6 @@ public class CurrencyRate {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -48,7 +47,6 @@ public class CurrencyRate {
             this.appliedAt = LocalDateTime.now();
         }
     }
-
 
     public CurrencyRate() {}
 
@@ -65,42 +63,40 @@ public class CurrencyRate {
         this.createdAt = createdAt;
     }
 
-
     public static Builder builder() { return new Builder(); }
 
     public static class Builder {
-        private Long          id;
-        private String        pair;
-        private BigDecimal    rate;
-        private String        source;
+        private Long id;
+        private String fromCurrency;
+        private String toCurrency;
+        private BigDecimal rate;
+        private boolean active = true;
+        private String source;
         private LocalDateTime appliedAt;
         private LocalDateTime createdAt;
 
-        public Builder id(Long id)
-        { this.id = id; return this; }
-        public Builder pair(String pair)
-        { this.pair = pair; return this; }
-        public Builder rate(BigDecimal rate)
-        { this.rate = rate; return this; }
-        public Builder source(String source)
-        { this.source = source; return this; }
-        public Builder appliedAt(LocalDateTime appliedAt)
-        { this.appliedAt = appliedAt; return this; }
-        public Builder createdAt(LocalDateTime createdAt)
-        { this.createdAt = createdAt; return this; }
+        public Builder id(Long id) { this.id = id; return this; }
+        public Builder fromCurrency(String fromCurrency) { this.fromCurrency = fromCurrency; return this; }
+        public Builder toCurrency(String toCurrency) { this.toCurrency = toCurrency; return this; }
+        public Builder rate(BigDecimal rate) { this.rate = rate; return this; }
+        public Builder active(boolean active) { this.active = active; return this; }
+        public Builder source(String source) { this.source = source; return this; }
+        public Builder appliedAt(LocalDateTime appliedAt) { this.appliedAt = appliedAt; return this; }
+        public Builder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 
         public CurrencyRate build() {
             CurrencyRate r = new CurrencyRate();
-            r.id        = this.id;
-            r.pair      = this.pair;
-            r.rate      = this.rate;
-            r.source    = this.source;
+            r.id = this.id;
+            r.fromCurrency = this.fromCurrency;
+            r.toCurrency = this.toCurrency;
+            r.rate = this.rate;
+            r.active = this.active;
+            r.source = this.source;
             r.appliedAt = this.appliedAt;
             r.createdAt = this.createdAt;
             return r;
         }
     }
-
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -121,13 +117,10 @@ public class CurrencyRate {
     public void setSource(String source) { this.source = source; }
 
     public LocalDateTime getAppliedAt() { return appliedAt; }
-    public void setAppliedAt(LocalDateTime appliedAt)
-    { this.appliedAt = appliedAt; }
+    public void setAppliedAt(LocalDateTime appliedAt) { this.appliedAt = appliedAt; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt)
-    { this.createdAt = createdAt; }
-
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     @Override
     public boolean equals(Object o) {
@@ -142,7 +135,6 @@ public class CurrencyRate {
 
     @Override
     public String toString() {
-        return "CurrencyRate{id=" + id + ", pair='" + pair
-                + "', rate=" + rate + "}";
+        return "CurrencyRate{id=" + id + ", from='" + fromCurrency + "', to='" + toCurrency + "', rate=" + rate + "}";
     }
 }
