@@ -22,6 +22,9 @@ public class Transfer {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
+    @Column(name = "sender_cin")
+    private String senderCIN;
+
     private String recipientName;
     private String recipientPhone;
     private String recipientCountry;
@@ -53,10 +56,11 @@ public class Transfer {
     public Transfer() {
     }
 
-    public Transfer(Long id, String transferCode, User sender, String recipientName, String recipientPhone, String recipientCountry, String senderCountry, BigDecimal amount, Currency currency, BigDecimal convertedAmount, Currency targetCurrency, TransferStatus status, Agency agency, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Transfer(Long id, String transferCode, User sender, String senderCIN, String recipientName, String recipientPhone, String recipientCountry, String senderCountry, BigDecimal amount, Currency currency, BigDecimal convertedAmount, Currency targetCurrency, TransferStatus status, Agency agency, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.transferCode = transferCode;
         this.sender = sender;
+        this.senderCIN = senderCIN;
         this.recipientName = recipientName;
         this.recipientPhone = recipientPhone;
         this.recipientCountry = recipientCountry;
@@ -93,6 +97,14 @@ public class Transfer {
 
     public void setSender(User sender) {
         this.sender = sender;
+    }
+
+    public String getSenderCIN() {
+        return senderCIN;
+    }
+
+    public void setSenderCIN(String senderCIN) {
+        this.senderCIN = senderCIN;
     }
 
     public String getRecipientName() {

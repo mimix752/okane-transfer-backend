@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -77,5 +78,27 @@ public class TransferRepository {
                 .setParameter("start", start)
                 .setParameter("end", end)
                 .getResultList();
+    }
+
+    // ── Méthodes pour KYC/AML ───────────────────
+
+    @Transactional(readOnly = true)
+    public long countBySenderDocumentAndCreatedAtAfter(String senderDocument, LocalDateTime fromDate) {
+        return em.createQuery(
+                        "SELECT COUNT(t) FROM Transfer t WHERE t.senderCIN = :doc AND t.createdAt >= :date",
+                        Long.class)
+                .setParameter("doc", senderDocument)
+                .setParameter("date", fromDate)
+                .getSingleResult();
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal sumAmountBySenderDocumentAndCreatedAtAfter(String senderDocument, LocalDateTime fromDate) {
+        return em.createQuery(
+                        "SELECT COALESCE(SUM(t.amount), 0) FROM Transfer t WHERE t.senderCIN = :doc AND t.createdAt >= :date",
+                        BigDecimal.class)
+                .setParameter("doc", senderDocument)
+                .setParameter("date", fromDate)
+                .getSingleResult();
     }
 }

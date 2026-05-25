@@ -15,14 +15,20 @@ public class CurrencyRate {
     private Long id;
 
     @NotBlank
-    @Column(name = "pair", nullable = false, length = 10)
-    private String pair;
+    @Column(name = "from_currency", nullable = false, length = 3)
+    private String fromCurrency;
+
+    @NotBlank
+    @Column(name = "to_currency", nullable = false, length = 3)
+    private String toCurrency;
 
     @NotNull
     @Positive
-    @Column(name = "rate", nullable = false,
-            precision = 18, scale = 6)
+    @Column(name = "rate", nullable = false, precision = 18, scale = 6)
     private BigDecimal rate;
+
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
 
     @Column(name = "source", length = 50)
     private String source;
@@ -46,13 +52,15 @@ public class CurrencyRate {
 
     public CurrencyRate() {}
 
-    public CurrencyRate(Long id, String pair, BigDecimal rate,
-                        String source, LocalDateTime appliedAt,
+    public CurrencyRate(Long id, String fromCurrency, String toCurrency, BigDecimal rate,
+                        boolean active, String source, LocalDateTime appliedAt,
                         LocalDateTime createdAt) {
-        this.id        = id;
-        this.pair      = pair;
-        this.rate      = rate;
-        this.source    = source;
+        this.id = id;
+        this.fromCurrency = fromCurrency;
+        this.toCurrency = toCurrency;
+        this.rate = rate;
+        this.active = active;
+        this.source = source;
         this.appliedAt = appliedAt;
         this.createdAt = createdAt;
     }
@@ -97,11 +105,17 @@ public class CurrencyRate {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getPair() { return pair; }
-    public void setPair(String pair) { this.pair = pair; }
+    public String getFromCurrency() { return fromCurrency; }
+    public void setFromCurrency(String fromCurrency) { this.fromCurrency = fromCurrency; }
+
+    public String getToCurrency() { return toCurrency; }
+    public void setToCurrency(String toCurrency) { this.toCurrency = toCurrency; }
 
     public BigDecimal getRate() { return rate; }
     public void setRate(BigDecimal rate) { this.rate = rate; }
+
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }

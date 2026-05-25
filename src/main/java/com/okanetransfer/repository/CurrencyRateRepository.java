@@ -8,42 +8,37 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface CurrencyRateRepository
-        extends JpaRepository<CurrencyRate, Long> {
+public interface CurrencyRateRepository extends JpaRepository<CurrencyRate, Long> {
 
-    List<CurrencyRate> findByPairOrderByAppliedAtDesc(String pair);
+    Optional<CurrencyRate> findByFromCurrencyAndToCurrencyAndActiveTrueOrderByCreatedAtDesc(
+        String fromCurrency, String toCurrency);
+
+    List<CurrencyRate> findByFromCurrencyAndToCurrencyOrderByCreatedAtDesc(
+        String fromCurrency, String toCurrency);
 
     @Query("""
         SELECT r FROM CurrencyRate r
-        WHERE r.pair      = :pair
+        WHERE r.fromCurrency = :from
+          AND r.toCurrency = :to
+          AND r.active = true
           AND r.appliedAt <= :date
         ORDER BY r.appliedAt DESC
     """)
     List<CurrencyRate> findLatestByPairAndDate(
-            @Param("pair") String pair,
+            @Param("from") String fromCurrency,
+            @Param("to") String toCurrency,
             @Param("date") LocalDateTime date
     );
 
-    List<CurrencyRate> findByPairAndAppliedAtBetween(
-            String pair,
-            LocalDateTime from,
-            LocalDateTime to
-    );
+    List<CurrencyRate> findByActiveTrue();
 
     @Query("""
-        SELECT r FROM CurrencyRate r
-        WHERE r.appliedAt = (
-            SELECT MAX(r2.appliedAt)
-            FROM CurrencyRate r2
-            WHERE r2.pair = r.pair
-        )
+        SELECT DISTINCT r.fromCurrency FROM CurrencyRate r WHERE r.active = true
+        UNION
+        SELECT DISTINCT r.toCurrency FROM CurrencyRate r WHERE r.active = true
     """)
-    List<CurrencyRate> findLatestForAllPairs();
-
-    boolean existsByPairAndAppliedAt(
-            String pair,
-            LocalDateTime appliedAt
-    );
+    List<String> findAllActiveCurrencies();
 }

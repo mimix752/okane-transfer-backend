@@ -13,8 +13,12 @@ import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.AgencyService;
+import com.okanetransfer.service.AgentAuditService;
+import com.okanetransfer.service.CurrencyConversionService;
 import com.okanetransfer.service.FeeGridService;
+import com.okanetransfer.service.KycAmlValidationService;
 import com.okanetransfer.service.NotificationService;
+import com.okanetransfer.service.ReceiptPrintingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +50,18 @@ public class EnvoiService {
     @Autowired
     private AgencyService agencyService;
 
+    @Autowired
+    private KycAmlValidationService kycAmlValidationService;
+
+    @Autowired
+    private CurrencyConversionService currencyConversionService;
+
+    @Autowired
+    private AgentAuditService agentAuditService;
+
+    @Autowired
+    private ReceiptPrintingService receiptPrintingService;
+
     @Transactional
     public EnvoiResponseDTO createTransfer(EnvoiRequestDTO dto, Long agentId) {
 
@@ -65,39 +81,74 @@ public class EnvoiService {
         // 4. Valider que le corridor correspond aux pays
         validateCorridor(corridor, dto.getSenderCountry(), dto.getRecipientCountry());
 
-        // 5. Calculer les frais
+        // 5. Validation KYC/AML approfondie
+        kycAmlValidationService.validateTransfer(
+            dto.getSenderCIN(),
+            null, // Pas de CIN requis pour le bénéficiaire
+            dto.getAmount(),
+            dto.getSenderCountry(),
+            dto.getRecipientCountry()
+        );
+
+        // 6. Calculer les frais
         BigDecimal fees = feeGridService.calculateFee(dto.getCorridorId(), dto.getAmount());
         BigDecimal totalAmount = dto.getAmount().add(fees);
 
-        // 6. Vérifier le solde de l'agence
+        // 7. Conversion de devise si nécessaire
+        String targetCurrency = corridor.getDestinationCurrency().getCode();
+        BigDecimal convertedAmount = dto.getAmount();
+        
+        if (!dto.getCurrency().equals(targetCurrency)) {
+            convertedAmount = currencyConversionService.convertAmount(
+                dto.getAmount(), dto.getCurrency(), targetCurrency
+            );
+        }
+
+        // 8. Vérifier le solde de l'agence
         Long agencyId = ((Agent) agent).getAgency().getId();
         agencyService.checkAndDeductBalance(agencyId, totalAmount);
 
-        // 7. Générer le code de retrait unique
+        // 9. Générer le code de retrait unique
         String transferCode = transferCodeService.generateUniqueCode();
 
-        // 8. Créer l'entité Transfer
+        // 10. Créer l'entité Transfer
         Transfer transfer = new Transfer();
         transfer.setTransferCode(transferCode);
         transfer.setSender(agent);
+        transfer.setSenderCIN(dto.getSenderCIN());
         transfer.setRecipientName(dto.getRecipientName() + " " + dto.getRecipientFirstName());
         transfer.setRecipientPhone(dto.getRecipientPhone());
         transfer.setRecipientCountry(dto.getRecipientCountry());
         transfer.setSenderCountry(dto.getSenderCountry());
         transfer.setAmount(dto.getAmount());
         transfer.setCurrency(Currency.valueOf(dto.getCurrency()));
+        transfer.setConvertedAmount(convertedAmount);
+        transfer.setTargetCurrency(Currency.valueOf(targetCurrency));
         transfer.setStatus(TransferStatus.PENDING);
         transfer.setAgency(((Agent) agent).getAgency());
         transfer.setCreatedAt(LocalDateTime.now());
 
-        // 9. Sauvegarder en BD
+        // 11. Sauvegarder en BD
         Transfer savedTransfer = transferRepository.save(transfer);
 
-        // 10. Envoyer les notifications
+        // 12. Enregistrer dans l'audit trail
+        agentAuditService.logTransferCreation(
+            savedTransfer.getId(),
+            savedTransfer.getTransferCode(),
+            savedTransfer.getRecipientName(),
+            dto.getAmount().toString(),
+            dto.getCurrency()
+        );
+
+        // 13. Envoyer les notifications
         notificationService.sendReceiptBySMS(transfer, fees);
         notificationService.sendReceiptByEmail(transfer, fees, agent.getEmail());
 
-        // 11. Retourner la réponse
+        // 14. Imprimer le reçu physique
+        String receiptContent = receiptPrintingService.generateTransferReceipt(savedTransfer, fees);
+        receiptPrintingService.printReceipt(receiptContent);
+
+        // 15. Retourner la réponse
         return EnvoiResponseDTO.fromEntity(savedTransfer, fees);
     }
 
