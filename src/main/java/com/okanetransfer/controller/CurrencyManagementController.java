@@ -18,7 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/currencies")
 @Tag(name = "Currency Management", description = "Currency conversion and exchange rate management")
-public class CurrencyController {
+public class CurrencyManagementController {
 
     @Autowired
     private CurrencyConversionService currencyConversionService;

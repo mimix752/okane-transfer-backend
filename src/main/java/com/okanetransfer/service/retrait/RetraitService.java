@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
@@ -50,7 +51,7 @@ public class RetraitService {
     }
 
     public void printDailyReport(String agencyName, java.time.LocalDate date, 
-                               int totalTransfers, BigDecimal totalAmount, 
+                               int totalTransfers, BigDecimal totalAmount,
                                BigDecimal totalFees, BigDecimal cashBalance) {
         String reportContent = receiptPrintingService.generateDailyReport(
             agencyName, date, totalTransfers, totalAmount, totalFees, cashBalance

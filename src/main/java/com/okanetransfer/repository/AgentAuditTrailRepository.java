@@ -12,23 +12,25 @@ import java.util.List;
 @Repository
 public interface AgentAuditTrailRepository extends JpaRepository<AgentAuditTrail, Long> {
 
-    List<AgentAuditTrail> findByAgentIdOrderByCreatedAtDesc(Long agentId);
-
-    List<AgentAuditTrail> findByAgentUsernameOrderByCreatedAtDesc(String agentUsername);
+    @Query("SELECT a FROM AgentAuditTrail a WHERE a.agentUsername = :username ORDER BY a.createdAt DESC")
+    List<AgentAuditTrail> findByAgentUsernameOrderByCreatedAtDesc(@Param("username") String agentUsername);
 
     List<AgentAuditTrail> findByActionTypeOrderByCreatedAtDesc(String actionType);
 
     @Query("SELECT a FROM AgentAuditTrail a WHERE a.createdAt BETWEEN :from AND :to ORDER BY a.createdAt DESC")
     List<AgentAuditTrail> findByDateRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query("SELECT a FROM AgentAuditTrail a WHERE a.agentId = :agentId AND a.createdAt BETWEEN :from AND :to ORDER BY a.createdAt DESC")
-    List<AgentAuditTrail> findByAgentAndDateRange(@Param("agentId") Long agentId, 
+    @Query("SELECT a FROM AgentAuditTrail a WHERE a.agentUsername = :username AND a.createdAt BETWEEN :from AND :to ORDER BY a.createdAt DESC")
+    List<AgentAuditTrail> findByAgentAndDateRange(@Param("username") String agentUsername, 
                                                  @Param("from") LocalDateTime from, 
                                                  @Param("to") LocalDateTime to);
 
     @Query("SELECT a FROM AgentAuditTrail a WHERE a.entityType = :entityType AND a.entityId = :entityId ORDER BY a.createdAt DESC")
     List<AgentAuditTrail> findByEntityTypeAndId(@Param("entityType") String entityType, @Param("entityId") Long entityId);
 
-    @Query("SELECT COUNT(a) FROM AgentAuditTrail a WHERE a.agentId = :agentId AND a.createdAt >= :fromDate")
-    long countAgentActionsSince(@Param("agentId") Long agentId, @Param("fromDate") LocalDateTime fromDate);
+    @Query("SELECT COUNT(a) FROM AgentAuditTrail a WHERE a.agentUsername = :username AND a.createdAt >= :fromDate")
+    long countAgentActionsSince(@Param("username") String agentUsername, @Param("fromDate") LocalDateTime fromDate);
+
+    @Query("SELECT a FROM AgentAuditTrail a ORDER BY a.createdAt DESC")
+    List<AgentAuditTrail> findAll();
 }

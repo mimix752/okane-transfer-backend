@@ -27,13 +27,13 @@ public class AgentAuditController {
     @GetMapping("/{agentId}")
     @Operation(summary = "Get audit trail for specific agent")
     public ResponseEntity<ApiResponse<List<AgentAuditTrail>>> getAgentAuditTrail(
-            @Parameter(description = "Agent ID") @PathVariable Long agentId,
+            @Parameter(description = "Agent username") @PathVariable String agentId,
             @Parameter(description = "Start date") @RequestParam(required = false) 
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @Parameter(description = "End date") @RequestParam(required = false) 
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
         
-        List<AgentAuditTrail> auditTrail = agentAuditService.getAgentAuditTrail(agentId, from, to);
+        List<AgentAuditTrail> auditTrail = agentAuditService.getAgentAuditTrail(null, from, to);
         return ResponseEntity.ok(ApiResponse.success("Journal d'audit récupéré avec succès", auditTrail));
     }
 

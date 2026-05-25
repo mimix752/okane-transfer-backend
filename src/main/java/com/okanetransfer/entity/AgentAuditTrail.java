@@ -12,9 +12,6 @@ public class AgentAuditTrail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "agent_id", nullable = false)
-    private Long agentId;
-
     @Column(name = "agent_username", nullable = false)
     private String agentUsername;
 
@@ -56,9 +53,6 @@ public class AgentAuditTrail {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public Long getAgentId() { return agentId; }
-    public void setAgentId(Long agentId) { this.agentId = agentId; }
 
     public String getAgentUsername() { return agentUsername; }
     public void setAgentUsername(String agentUsername) { this.agentUsername = agentUsername; }

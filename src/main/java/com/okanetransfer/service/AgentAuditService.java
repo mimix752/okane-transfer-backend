@@ -28,12 +28,10 @@ public class AgentAuditService {
                               String description, Object oldValues, Object newValues) {
         
         String currentUsername = SecurityUtils.getCurrentUsername();
-        Long currentUserId = SecurityUtils.getCurrentUserId();
         
-        if (currentUserId == null) return; // Pas d'utilisateur connecté
+        if ("anonymous".equals(currentUsername)) return; // Pas d'utilisateur connecté
         
         AgentAuditTrail audit = new AgentAuditTrail();
-        audit.setAgentId(currentUserId);
         audit.setAgentUsername(currentUsername);
         audit.setActionType(actionType);
         audit.setEntityType(entityType);
@@ -89,9 +87,10 @@ public class AgentAuditService {
 
     @Transactional
     public void logLogin(String ipAddress, String userAgent) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        
         AgentAuditTrail audit = new AgentAuditTrail();
-        audit.setAgentId(SecurityUtils.getCurrentUserId());
-        audit.setAgentUsername(SecurityUtils.getCurrentUsername());
+        audit.setAgentUsername(currentUsername);
         audit.setActionType("LOGIN");
         audit.setDescription("Connexion de l'agent");
         audit.setIpAddress(ipAddress);
@@ -126,12 +125,12 @@ public class AgentAuditService {
 
     @Transactional(readOnly = true)
     public List<AgentAuditTrail> getAgentAuditTrail(Long agentId, LocalDateTime from, LocalDateTime to) {
+        String username = SecurityUtils.getCurrentUsername();
+        
         if (from != null && to != null) {
-            return auditTrailRepository.findByAgentAndDateRange(agentId, from, to);
-        } else if (agentId != null) {
-            return auditTrailRepository.findByAgentIdOrderByCreatedAtDesc(agentId);
+            return auditTrailRepository.findByAgentAndDateRange(username, from, to);
         } else {
-            return auditTrailRepository.findByDateRange(from, to);
+            return auditTrailRepository.findByAgentUsernameOrderByCreatedAtDesc(username);
         }
     }
 
@@ -142,7 +141,8 @@ public class AgentAuditService {
 
     @Transactional(readOnly = true)
     public long getAgentActivityCount(Long agentId, LocalDateTime since) {
-        return auditTrailRepository.countAgentActionsSince(agentId, since);
+        String username = SecurityUtils.getCurrentUsername();
+        return auditTrailRepository.countAgentActionsSince(username, since);
     }
 
     private String getClientIpAddress(HttpServletRequest request) {
