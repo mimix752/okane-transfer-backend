@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -54,13 +53,11 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/v3/api-docs/**"),
                     new AntPathRequestMatcher("/swagger-ui/**"),
                     new AntPathRequestMatcher("/swagger-ui.html"),
-                    new AntPathRequestMatcher("/webjars/**"),
-                    new AntPathRequestMatcher("/"),
-                    new AntPathRequestMatcher("/*.html"),
                     new AntPathRequestMatcher("/swagger.html"),
-                    new AntPathRequestMatcher("/favicon.ico")
+                    new AntPathRequestMatcher("/webjars/**"),
+                    new AntPathRequestMatcher("/favicon.ico"),
+                    new AntPathRequestMatcher("/")
                 ).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/admin/**")).permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

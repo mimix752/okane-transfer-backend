@@ -20,11 +20,28 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+    private static final String[] PUBLIC_URLS = {
+        "/api/auth/",
+        "/v3/api-docs",
+        "/swagger-ui",
+        "/swagger.html",
+        "/webjars/",
+        "/favicon.ico"
+    };
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
+
+        String requestPath = request.getRequestURI();
+        
+        // Skip JWT validation for public URLs
+        if (isPublicUrl(requestPath)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         try {
             String token = extractTokenFromRequest(request);
@@ -45,6 +62,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPublicUrl(String requestPath) {
+        for (String publicUrl : PUBLIC_URLS) {
+            if (requestPath.contains(publicUrl)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String extractTokenFromRequest(HttpServletRequest request) {
