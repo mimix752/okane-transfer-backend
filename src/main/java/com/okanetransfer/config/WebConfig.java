@@ -39,7 +39,14 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Override
+    public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
+        configurer.enable();
+    }
+
+    @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/*.html", "/*.js", "/*.css")
+                .addResourceLocations("/");
         registry.addResourceHandler("/swagger-ui/**")
                 .addResourceLocations("classpath:/META-INF/resources/webjars/swagger-ui/5.17.14/")
                 .resourceChain(false)

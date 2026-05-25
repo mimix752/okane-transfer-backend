@@ -57,7 +57,7 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/webjars/**"),
                     new AntPathRequestMatcher("/"),
                     new AntPathRequestMatcher("/*.html"),
-                        new AntPathRequestMatcher("/swagger.html"),
+                    new AntPathRequestMatcher("/swagger.html"),
                     new AntPathRequestMatcher("/favicon.ico")
                 ).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/admin/**")).permitAll()

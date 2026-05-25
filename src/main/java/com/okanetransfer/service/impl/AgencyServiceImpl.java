@@ -37,6 +37,9 @@ public class AgencyServiceImpl implements AgencyService {
     @Autowired
     private AuditService auditService;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     // ─── Queries ───────────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -159,25 +162,23 @@ public class AgencyServiceImpl implements AgencyService {
     @Transactional
     @Override
     public void addAgent(Long agencyId, Long userId, String adminIp) {
-
         Agency agency = findOrThrow(agencyId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "User not found with id: " + userId));
 
-        Agent agent = new Agent();
-        agent.setAgency(agency);
-        agent.setActive(true);
-        agent.setId(user.getId());
-        agent.setUsername(user.getUsername());
-        agent.setEmail(user.getEmail());
-        agent.setPassword(user.getPassword());
-        agent.setPhone(user.getPhone());
-        agent.setRole(Role.AGENT);
-        agent.setEnabled(user.isEnabled());
+        entityManager.createQuery("UPDATE User u SET u.role = :role WHERE u.id = :id")
+                .setParameter("role", Role.AGENT)
+                .setParameter("id", userId)
+                .executeUpdate();
 
-        agentRepository.save(agent);
+        entityManager.createNativeQuery(
+                "INSERT INTO agent (id, agency_id, active) VALUES (:id, :agencyId, true) " +
+                "ON CONFLICT (id) DO UPDATE SET agency_id = :agencyId, active = true")
+                .setParameter("id", userId)
+                .setParameter("agencyId", agencyId)
+                .executeUpdate();
 
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
