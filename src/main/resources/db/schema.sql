@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS agency (
                                       name                VARCHAR(150)   NOT NULL,
     address             VARCHAR(255),
     country             VARCHAR(100),
-    destination_country VARCHAR(100),
     daily_limit         NUMERIC(15,2),
     current_balance     NUMERIC(15,2)  NOT NULL DEFAULT 0,
     active              BOOLEAN        NOT NULL DEFAULT TRUE,

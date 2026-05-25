@@ -8,6 +8,7 @@ import com.okanetransfer.enums.Role;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.AdminUserService;
 import com.okanetransfer.service.AuditService;
+import com.okanetransfer.util.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,16 +29,20 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // ─── Queries ───────────────────────────────────────────────
+
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponseDTO> getAllUsers(Role role, Boolean active, Pageable pageable) {
-        if (role != null && active != null) {
-            return userRepository.findByRoleAndEnabled(role, active, pageable).map(this::toDTO);
-        } else if (role != null) {
+    public Page<UserResponseDTO> getAllUsers(Role role, Boolean active,
+                                             Pageable pageable) {
+        if (role != null && active != null)
+            return userRepository.findByRoleAndEnabled(role, active, pageable)
+                    .map(this::toDTO);
+        if (role != null)
             return userRepository.findByRole(role, pageable).map(this::toDTO);
-        } else if (active != null) {
+        if (active != null)
             return userRepository.findByEnabled(active, pageable).map(this::toDTO);
-        }
+
         return userRepository.findAll(pageable).map(this::toDTO);
     }
 
@@ -47,9 +52,12 @@ public class AdminUserServiceImpl implements AdminUserService {
         return toDTO(findOrThrow(id));
     }
 
+    // ─── Commands ──────────────────────────────────────────────
+
     @Transactional
     @Override
     public UserResponseDTO createUser(UserRequestDTO dto, String adminIp) {
+
         User user = new User();
         user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
@@ -59,11 +67,14 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         User saved = userRepository.save(user);
 
-        auditService.logAction(
-                adminIp, "CREATE_USER",
-                "User", saved.getId(),
-                null, saved.getEmail(),
-                adminIp
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "CREATE_USER",
+                "User",
+                saved.getId(),
+                "email=" + saved.getEmail()
+                        + " | role=" + saved.getRole()
+                        + " | ip=" + adminIp
         );
 
         return toDTO(saved);
@@ -71,9 +82,13 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Transactional
     @Override
-    public UserResponseDTO updateUser(Long id, UserRequestDTO dto, String adminIp) {
+    public UserResponseDTO updateUser(Long id, UserRequestDTO dto,
+                                      String adminIp) {
         User user = findOrThrow(id);
-        String oldEmail = user.getEmail();
+
+        String oldEmail    = user.getEmail();
+        String oldUsername = user.getUsername();
+        Role   oldRole     = user.getRole();
 
         user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
@@ -82,11 +97,18 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         User saved = userRepository.save(user);
 
-        auditService.logAction(
-                adminIp, "UPDATE_USER",
-                "User", id,
-                oldEmail, saved.getEmail(),
-                adminIp
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "UPDATE_USER",
+                "User",
+                id,
+                "old=[username=" + oldUsername
+                        + ", email=" + oldEmail
+                        + ", role=" + oldRole + "]"
+                        + " | new=[username=" + saved.getUsername()
+                        + ", email=" + saved.getEmail()
+                        + ", role=" + saved.getRole() + "]"
+                        + " | ip=" + adminIp
         );
 
         return toDTO(saved);
@@ -95,43 +117,49 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional
     @Override
     public void toggleUser(Long id, String adminIp) {
+
         User user = findOrThrow(id);
-        boolean previousState = user.isEnabled();
-        user.setEnabled(!previousState);
+        boolean previous = user.isEnabled();
+        user.setEnabled(!previous);
         userRepository.save(user);
 
-        auditService.logAction(
-                adminIp,
-                previousState ? "DISABLE_USER" : "ENABLE_USER",
-                "User", id,
-                String.valueOf(previousState),
-                String.valueOf(!previousState),
-                adminIp
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                previous ? "DISABLE_USER" : "ENABLE_USER",
+                "User",
+                id,
+                "old=" + previous
+                        + " | new=" + !previous
+                        + " | ip=" + adminIp
         );
     }
 
     @Transactional
     @Override
-    public void updateRole(Long id, RoleUpdateRequestDTO dto, String adminIp) {
+    public void updateRole(Long id, RoleUpdateRequestDTO dto,
+                           String adminIp) {
         User user = findOrThrow(id);
         Role oldRole = user.getRole();
         user.setRole(dto.getRole());
         userRepository.save(user);
 
-        auditService.logAction(
-                adminIp, "UPDATE_ROLE",
-                "User", id,
-                oldRole.name(),
-                dto.getRole().name(),
-                adminIp
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "UPDATE_ROLE",
+                "User",
+                id,
+                "old=" + oldRole.name()
+                        + " | new=" + dto.getRole().name()
+                        + " | ip=" + adminIp
         );
     }
 
-    // ─── helpers ───────────────────────────────────────────────
+    // ─── Helpers ───────────────────────────────────────────────
 
     private User findOrThrow(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "User not found with id: " + id));
     }
 
     private UserResponseDTO toDTO(User user) {
@@ -145,4 +173,6 @@ public class AdminUserServiceImpl implements AdminUserService {
         dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
+
 }
+

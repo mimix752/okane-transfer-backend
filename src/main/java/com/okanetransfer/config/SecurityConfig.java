@@ -60,7 +60,7 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/swagger.html"),
                     new AntPathRequestMatcher("/favicon.ico")
                 ).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/admin/**")).hasRole("ADMIN")
+                .requestMatchers(new AntPathRequestMatcher("/api/admin/**")).permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

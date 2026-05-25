@@ -4,6 +4,7 @@ import com.okanetransfer.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public class UserRequestDTO {
 
@@ -11,10 +12,14 @@ public class UserRequestDTO {
     private String username;
 
     @NotBlank
+    @Email(message = "Invalid email format")
     private String email;
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "Phone is required")
+    @Pattern(
+            regexp = "^[+]?[0-9]{7,15}$",
+            message = "Invalid phone number"
+    )
     private String phone;
 
     private String cin;

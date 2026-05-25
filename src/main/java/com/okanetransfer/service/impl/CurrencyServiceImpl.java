@@ -8,6 +8,7 @@ import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.CurrencyRepository;
 import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.CurrencyService;
+import com.okanetransfer.util.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,16 +20,17 @@ public class CurrencyServiceImpl implements CurrencyService {
 
     private final CurrencyRepository currencyRepository;
     private final CorridorRepository corridorRepository;
-    private final AuditService auditLogService;
+    private final AuditService       auditService;
 
-    // Constructeur manuel (remplace @RequiredArgsConstructor)
     public CurrencyServiceImpl(CurrencyRepository currencyRepository,
                                CorridorRepository corridorRepository,
-                               AuditService auditLogService) {
+                               AuditService auditService) {
         this.currencyRepository = currencyRepository;
         this.corridorRepository = corridorRepository;
-        this.auditLogService    = auditLogService;
+        this.auditService       = auditService;
     }
+
+    // ─── Queries ───────────────────────────────────────────────
 
     @Override
     @Transactional(readOnly = true)
@@ -64,30 +66,39 @@ public class CurrencyServiceImpl implements CurrencyService {
         return CurrencyResponseDTO.fromEntity(currency);
     }
 
+    // ─── Commands ──────────────────────────────────────────────
+
     @Override
     @Transactional
     public CurrencyResponseDTO create(CurrencyRequestDTO dto,
                                       String adminIp) {
         String code = dto.getCode().toUpperCase();
-        if (currencyRepository.existsByCode(code)) {
+
+        if (currencyRepository.existsByCode(code))
             throw new IllegalArgumentException(
                     "Currency with code '" + code + "' already exists");
-        }
 
         Currency currency = Currency.builder()
                 .code(code)
                 .name(dto.getName())
                 .symbol(dto.getSymbol())
                 .exchangeRate(dto.getExchangeRate())
-                .active(dto.getActive() != null
-                        ? dto.getActive() : true)
+                .active(dto.getActive() != null ? dto.getActive() : true)
                 .build();
 
         Currency saved = currencyRepository.save(currency);
 
-        auditLogService.logAction("SYSTEM", "CREATE_CURRENCY",
-                "currency", saved.getId(), null,
-                "code=" + saved.getCode(), adminIp);
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "CREATE_CURRENCY",
+                "Currency",
+                saved.getId(),
+                "code=" + saved.getCode()
+                        + " | name=" + saved.getName()
+                        + " | symbol=" + saved.getSymbol()
+                        + " | rate=" + saved.getExchangeRate()
+                        + " | ip=" + adminIp
+        );
 
         return CurrencyResponseDTO.fromEntity(saved);
     }
@@ -100,27 +111,39 @@ public class CurrencyServiceImpl implements CurrencyService {
         Currency currency = findOrThrow(id);
         String newCode = dto.getCode().toUpperCase();
 
-        if (currencyRepository.existsByCodeAndIdNot(newCode, id)) {
+        if (currencyRepository.existsByCodeAndIdNot(newCode, id))
             throw new IllegalArgumentException(
                     "Currency with code '" + newCode + "' already exists");
-        }
 
-        String oldValue = "code=" + currency.getCode()
-                + ", rate=" + currency.getExchangeRate();
+        String oldCode   = currency.getCode();
+        String oldName   = currency.getName();
+        String oldSymbol = currency.getSymbol();
+        String oldRate   = String.valueOf(currency.getExchangeRate());
 
         currency.setCode(newCode);
         currency.setName(dto.getName());
         currency.setSymbol(dto.getSymbol());
         currency.setExchangeRate(dto.getExchangeRate());
-        if (dto.getActive() != null) {
+        if (dto.getActive() != null)
             currency.setActive(dto.getActive());
-        }
 
         Currency updated = currencyRepository.save(currency);
 
-        auditLogService.logAction("SYSTEM", "UPDATE_CURRENCY",
-                "currency", id, oldValue,
-                "code=" + updated.getCode(), adminIp);
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "UPDATE_CURRENCY",
+                "Currency",
+                id,
+                "old=[code=" + oldCode
+                        + ", name=" + oldName
+                        + ", symbol=" + oldSymbol
+                        + ", rate=" + oldRate + "]"
+                        + " | new=[code=" + updated.getCode()
+                        + ", name=" + updated.getName()
+                        + ", symbol=" + updated.getSymbol()
+                        + ", rate=" + updated.getExchangeRate() + "]"
+                        + " | ip=" + adminIp
+        );
 
         return CurrencyResponseDTO.fromEntity(updated);
     }
@@ -136,26 +159,30 @@ public class CurrencyServiceImpl implements CurrencyService {
                             .stream()
                             .anyMatch(c -> c.isActive());
 
-            if (usedByActiveCorridor) {
+            if (usedByActiveCorridor)
                 throw new IllegalStateException(
                         "Cannot deactivate currency '"
                                 + currency.getCode()
                                 + "': used by active corridors");
-            }
         }
 
-        String oldStatus = String.valueOf(currency.isActive());
-        currency.setActive(!currency.isActive());
+        boolean previous = currency.isActive();
+        currency.setActive(!previous);
         currencyRepository.save(currency);
 
-        auditLogService.logAction("SYSTEM",
-                currency.isActive()
-                        ? "ACTIVATE_CURRENCY"
-                        : "DEACTIVATE_CURRENCY",
-                "currency", id,
-                "active=" + oldStatus,
-                "active=" + currency.isActive(), adminIp);
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                previous ? "DEACTIVATE_CURRENCY" : "ACTIVATE_CURRENCY",
+                "Currency",
+                id,
+                "old=" + previous
+                        + " | new=" + !previous
+                        + " | code=" + currency.getCode()
+                        + " | ip=" + adminIp
+        );
     }
+
+    // ─── Helpers ───────────────────────────────────────────────
 
     private Currency findOrThrow(Long id) {
         return currencyRepository.findById(id)

@@ -1,18 +1,32 @@
 package com.okanetransfer.service;
 
-import com.okanetransfer.entity.JournalAudit;
+import com.okanetransfer.dto.response.JournalAuditResponseDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface AuditService {
 
-    void logAction(String performedBy, String action,
-                   String entityType, Long entityId,
-                   String oldValue, String newValue,
-                   String ip);
 
-    List<JournalAudit> getByUser(String performedBy);
+    void log(String performedBy,
+             String action,
+             String entityType,
+             Long entityId,
+             String details);
 
-    List<JournalAudit> getByPeriod(LocalDateTime start, LocalDateTime end);
+
+    JournalAuditResponseDTO getById(Long id);
+
+    Map<String, Object> search(String performedBy,
+                               String action,
+                               String entityType,
+                               Long entityId,
+                               LocalDateTime from,
+                               LocalDateTime to,
+                               int page,
+                               int size);
+
+    List<JournalAuditResponseDTO> getHistoryForEntity(
+            String entityType, Long entityId);
 }

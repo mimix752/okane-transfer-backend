@@ -17,7 +17,6 @@ public class AgencyRequestDTO {
     @NotBlank
     private String country;
 
-    private String destinationCountry;
 
     @NotNull
     @Positive
@@ -26,11 +25,10 @@ public class AgencyRequestDTO {
     public AgencyRequestDTO() {
     }
 
-    public AgencyRequestDTO(String name, String address, String country, String destinationCountry, BigDecimal dailyLimit) {
+    public AgencyRequestDTO(String name, String address, String country, BigDecimal dailyLimit) {
         this.name = name;
         this.address = address;
         this.country = country;
-        this.destinationCountry = destinationCountry;
         this.dailyLimit = dailyLimit;
     }
 
@@ -56,14 +54,6 @@ public class AgencyRequestDTO {
 
     public void setCountry(String country) {
         this.country = country;
-    }
-
-    public String getDestinationCountry() {
-        return destinationCountry;
-    }
-
-    public void setDestinationCountry(String destinationCountry) {
-        this.destinationCountry = destinationCountry;
     }
 
     public BigDecimal getDailyLimit() {
