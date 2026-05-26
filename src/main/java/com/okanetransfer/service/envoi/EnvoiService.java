@@ -19,6 +19,7 @@ import com.okanetransfer.service.FeeGridService;
 import com.okanetransfer.service.KycAmlValidationService;
 import com.okanetransfer.service.NotificationService;
 import com.okanetransfer.service.ReceiptPrintingService;
+import com.okanetransfer.service.caisse.CashRegisterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +62,9 @@ public class EnvoiService {
 
     @Autowired
     private ReceiptPrintingService receiptPrintingService;
+
+    @Autowired
+    private CashRegisterService cashRegisterService;
 
     @Transactional
     public EnvoiResponseDTO createTransfer(EnvoiRequestDTO dto, Long agentId) {
@@ -122,6 +126,7 @@ public class EnvoiService {
         transfer.setSenderCountry(dto.getSenderCountry());
         transfer.setAmount(dto.getAmount());
         transfer.setCurrency(Currency.valueOf(dto.getCurrency()));
+        transfer.setFees(fees);
         transfer.setConvertedAmount(convertedAmount);
         transfer.setTargetCurrency(Currency.valueOf(targetCurrency));
         transfer.setStatus(TransferStatus.PENDING);
@@ -131,7 +136,12 @@ public class EnvoiService {
         // 11. Sauvegarder en BD
         Transfer savedTransfer = transferRepository.save(transfer);
 
-        // 12. Enregistrer dans l'audit trail
+        // 12. Mettre à jour la caisse (débit)
+        try {
+            cashRegisterService.crediter(agentId, totalAmount.negate(), "ENVOI", transferCode);
+        } catch (Exception ignored) {}
+
+        // 13. Enregistrer dans l'audit trail
         agentAuditService.logTransferCreation(
             savedTransfer.getId(),
             savedTransfer.getTransferCode(),

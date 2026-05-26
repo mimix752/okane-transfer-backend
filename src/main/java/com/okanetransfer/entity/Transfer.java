@@ -27,11 +27,15 @@ public class Transfer {
 
     private String recipientName;
     private String recipientPhone;
+    private String recipientCIN;
     private String recipientCountry;
     private String senderCountry;
 
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal fees = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     private Currency currency;
@@ -145,6 +149,14 @@ public class Transfer {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public BigDecimal getFees() {
+        return fees;
+    }
+
+    public void setFees(BigDecimal fees) {
+        this.fees = fees;
     }
 
     public Currency getCurrency() {

@@ -87,6 +87,9 @@
                 <div class="field"><label>Mot de passe</label><input id="lPass" type="password" placeholder="••••••"/></div>
                 <button class="btn btn-dark" onclick="login()">Se connecter</button>
                 <div class="msg" id="lMsg"></div>
+                <div style="margin-top:14px;text-align:center">
+                    <span class="link" onclick="showScreen('scrPublic')">🔍 Suivre un transfert sans connexion</span>
+                </div>
             </div>
 
             <!-- REGISTER -->
@@ -197,10 +200,15 @@
         <div class="card">
             <div class="card-title">🏧 Ma Caisse <span id="caisseStatus" class="badge b-cancelled">FERMÉE</span></div>
             <div class="field"><label>Mon Agent ID</label><input id="myAgentId" type="number" placeholder="ex: 2"/></div>
-            <div style="display:flex;gap:10px">
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <button class="btn btn-green btn-sm" onclick="ouvrirCaisse()">Ouvrir</button>
-                <button class="btn btn-red btn-sm" onclick="fermerCaisse()">Fermer</button>
+                <button class="btn btn-dark btn-sm" onclick="voirSolde()">💰 Solde</button>
+                <button class="btn btn-dark btn-sm" onclick="voirHistorique()">📋 Historique</button>
             </div>
+            <div id="caisseInfo" style="display:none;margin-top:12px;font-size:.88rem"></div>
+            <div class="divider" style="margin-top:14px">── Clôture de caisse ──</div>
+            <div class="field"><label>Solde réel (argent compté en caisse)</label><input id="soldeReel" type="number" step="0.01" placeholder="ex: 15000.00"/></div>
+            <button class="btn btn-red btn-sm" onclick="fermerCaisse()">Fermer & Réconcilier</button>
             <div class="msg" id="caisseMsg"></div>
         </div>
 
@@ -223,6 +231,7 @@
             </div>
             <div class="row">
                 <div class="field"><label>Tél bénéficiaire</label><input id="eBnTel" placeholder="+212612345678"/></div>
+                <div class="field"><label>CIN/Passeport bénéficiaire</label><input id="eBnCin" placeholder="AB123456"/></div>
                 <div class="field"><label>Pays bén. (2-3L)</label><input id="eBnPays" placeholder="MA" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
             </div>
             <div class="divider">── Montant ──</div>
@@ -238,11 +247,17 @@
         <!-- Retrait -->
         <div class="card">
             <div class="card-title">💸 Retrait</div>
-            <div class="field"><label>Code de transfert</label><input id="rCode" placeholder="TRF-XXXXXXXX" oninput="this.value=this.value.toUpperCase()"/></div>
+            <div class="row">
+                <div class="field"><label>Code de transfert</label><input id="rCode" placeholder="TRF-XXXXXXXX" oninput="this.value=this.value.toUpperCase()"/></div>
+                <div class="field"><label>ou Téléphone bénéficiaire</label><input id="rSearchPhone" placeholder="+212612345678"/></div>
+            </div>
             <button class="btn btn-dark btn-sm" onclick="rechercherTransfert()">Rechercher</button>
             <div id="transferPreview" style="display:none;margin-top:14px">
                 <div id="transferInfo" class="card" style="background:#f8fafc;box-shadow:none;border:1.5px solid #e0e0e0;padding:16px"></div>
-                <div class="field" style="margin-top:12px"><label>Téléphone bénéficiaire (vérification)</label><input id="retraitPhone" placeholder="+212612345678"/></div>
+                <div class="row" style="margin-top:12px">
+                    <div class="field"><label>Téléphone bénéficiaire</label><input id="retraitPhone" placeholder="+212612345678"/></div>
+                    <div class="field"><label>CIN / Passeport bénéficiaire <span style="color:#e74c3c">*</span></label><input id="retraitCIN" placeholder="AB123456"/></div>
+                </div>
                 <button class="btn btn-green" onclick="confirmerRetrait()">✓ Confirmer et payer</button>
             </div>
             <div class="msg" id="retraitMsg"></div>
@@ -276,12 +291,25 @@
             <div class="msg" id="clientMsg"></div>
         </div>
         <div class="card">
-            <div class="card-title">🔍 Rechercher un transfert</div>
-            <div class="row">
-                <div class="field"><label>Code de transfert</label><input id="clientSearchCode" placeholder="TRF-XXXXXXXX" oninput="this.value=this.value.toUpperCase()"/></div>
-            </div>
+            <div class="card-title">🔍 Suivre un transfert (sans connexion)</div>
+            <p style="font-size:.8rem;color:#888;margin-bottom:12px">Entrez le code de retrait pour connaître le statut de votre transfert.</p>
+            <div class="field"><label>Code de transfert</label><input id="clientSearchCode" placeholder="TRF-XXXXXXXX" oninput="this.value=this.value.toUpperCase()"/></div>
             <button class="btn btn-dark btn-sm" onclick="clientSearch()">Rechercher</button>
             <div id="clientSearchResult" style="margin-top:12px;font-size:.88rem"></div>
+        </div>
+    </div>
+
+    <!-- ══ SUIVI PUBLIC ══ -->
+    <div class="screen" id="scrPublic">
+        <div class="card">
+            <div class="card-title">🔍 Suivi de transfert</div>
+            <p style="font-size:.8rem;color:#888;margin-bottom:12px">Aucune connexion requise. Entrez votre code de retrait.</p>
+            <div class="field"><label>Code de transfert</label><input id="publicCode" placeholder="TRF-XXXXXXXX" oninput="this.value=this.value.toUpperCase()"/></div>
+            <button class="btn btn-dark" onclick="suivrePublic()">Suivre mon transfert</button>
+            <div id="publicResult" style="margin-top:14px"></div>
+            <div style="margin-top:16px;text-align:center">
+                <span class="link" onclick="showScreen('scrAuth')">← Se connecter</span>
+            </div>
         </div>
     </div>
 
@@ -488,21 +516,60 @@
         const id = document.getElementById('myAgentId').value.trim();
         if (!id) return msg('caisseMsg','Entrez votre Agent ID', true);
         const {status} = await api('POST',`/api/caisse/ouvrir/${id}`);
-        // 500 = LazyInitializationException à la sérialisation, mais la caisse est bien ouverte en base
         if (status === 400) return msg('caisseMsg','Erreur (caisse déjà ouverte ?)', true);
         document.getElementById('caisseStatus').textContent='OUVERTE';
         document.getElementById('caisseStatus').className='badge b-paid';
         msg('caisseMsg','Caisse ouverte !', false);
     }
-    async function fermerCaisse() {
+
+    async function voirSolde() {
         clearMsg('caisseMsg');
         const id = document.getElementById('myAgentId').value.trim();
         if (!id) return msg('caisseMsg','Entrez votre Agent ID', true);
-        const {status} = await api('POST',`/api/caisse/fermer/${id}`);
-        if (status === 400) return msg('caisseMsg','Erreur fermeture caisse', true);
+        const {ok,data} = await api('GET',`/api/caisse/solde/${id}`);
+        if (!ok) return msg('caisseMsg', data?.message||'Erreur', true);
+        const d = data;
+        const info = document.getElementById('caisseInfo');
+        info.style.display = 'block';
+        info.innerHTML = `
+            <div class="tc-row"><span class="tc-label">Solde système</span><span class="tc-val amount-big">${d.solde}</span></div>
+            <div class="tc-row"><span class="tc-label">Ouverte le</span><span class="tc-val">${d.ouverteLe?.substring(0,16)||'—'}</span></div>`;
+    }
+
+    async function voirHistorique() {
+        clearMsg('caisseMsg');
+        const id = document.getElementById('myAgentId').value.trim();
+        if (!id) return msg('caisseMsg','Entrez votre Agent ID', true);
+        const {ok,data} = await api('GET',`/api/caisse/historique/${id}`);
+        if (!ok) return msg('caisseMsg', data?.message||'Erreur', true);
+        const list = data || [];
+        const info = document.getElementById('caisseInfo');
+        info.style.display = 'block';
+        if (!list.length) { info.innerHTML = '<p style="color:#aaa">Aucune opération aujourd\'hui</p>'; return; }
+        info.innerHTML = `<table style="width:100%;font-size:.82rem">
+            <thead><tr><th>Type</th><th>Montant</th><th>Solde après</th><th>Code</th><th>Heure</th></tr></thead>
+            <tbody>${list.map(o=>`<tr>
+                <td><span class="badge ${o.type==='ENVOI'?'b-pending':'b-paid'}">${o.type}</span></td>
+                <td>${o.amount}</td><td>${o.balanceAfter}</td>
+                <td>${o.transferCode||'—'}</td>
+                <td>${o.createdAt?.substring(11,16)||'—'}</td>
+            </tr>`).join('')}</tbody></table>`;
+    }
+
+    async function fermerCaisse() {
+        clearMsg('caisseMsg');
+        const id = document.getElementById('myAgentId').value.trim();
+        const solde = document.getElementById('soldeReel').value.trim();
+        if (!id) return msg('caisseMsg','Entrez votre Agent ID', true);
+        if (!solde) return msg('caisseMsg','Entrez le solde réel compté', true);
+        const {ok,data} = await api('POST',`/api/caisse/fermer/${id}?soldeReel=${solde}`);
+        if (!ok) return msg('caisseMsg', data?.message||'Erreur fermeture', true);
         document.getElementById('caisseStatus').textContent='FERMÉE';
         document.getElementById('caisseStatus').className='badge b-cancelled';
-        msg('caisseMsg','Caisse fermée.', false);
+        const statut = data.statut;
+        const color = statut==='OK'?'#27ae60':statut==='MANQUE'?'#e74c3c':'#f39c12';
+        msg('caisseMsg', `${data.message} | Système: ${data.soldeSysteme} | Réel: ${data.soldeReel} | Écart: ${data.ecart}`, statut!=='OK');
+        document.getElementById('caisseMsg').style.borderColor = color;
     }
 
     async function creerEnvoi() {
@@ -531,17 +598,20 @@
         document.getElementById('transferPreview').style.display='none';
         document.getElementById('retraitSuccess').style.display='none';
         const code = document.getElementById('rCode').value.trim();
-        if (!code) return msg('retraitMsg','Entrez un code', true);
-        const {ok,data} = await api('GET',`/api/transfers/code/${code}`);
+        const phone = document.getElementById('rSearchPhone').value.trim();
+        if (!code && !phone) return msg('retraitMsg','Entrez un code ou un numéro de téléphone', true);
+        const params = new URLSearchParams();
+        if (code) params.append('code', code);
+        if (phone) params.append('telephone', phone);
+        const {ok,data} = await api('GET',`/api/retrait/recherche?${params}`);
         if (!ok) return msg('retraitMsg', data?.message||'Transfert introuvable', true);
-        const t = data.data;
+        const t = data;
         if (t.status !== 'PENDING') return msg('retraitMsg',`Statut : ${t.status} — non payable`, true);
         currentTransfer = t;
         document.getElementById('transferInfo').innerHTML = `
     <div class="tc-row"><span class="tc-label">Code</span><span class="tc-val">${t.transferCode}</span></div>
     <div class="tc-row"><span class="tc-label">Bénéficiaire</span><span class="tc-val">${t.recipientName}</span></div>
-    <div class="tc-row"><span class="tc-label">Montant à payer</span><span class="amount-big">${t.convertedAmount ?? t.amount} ${t.targetCurrency ?? t.currency}</span></div>
-    <div class="tc-row"><span class="tc-label">Envoyé</span><span class="tc-val">${t.amount} ${t.currency}</span></div>
+    <div class="tc-row"><span class="tc-label">Montant à payer</span><span class="amount-big">${t.paidAmount ?? t.convertedAmount ?? t.amount}</span></div>
     <div class="tc-row"><span class="tc-label">Statut</span>${statusBadge(t.status)}</div>`;
         document.getElementById('transferPreview').style.display='block';
     }
@@ -549,14 +619,17 @@
     async function confirmerRetrait() {
         clearMsg('retraitMsg');
         const phone = document.getElementById('retraitPhone').value.trim();
+        const cin   = document.getElementById('retraitCIN').value.trim();
         if (!phone) return msg('retraitMsg','Entrez le téléphone du bénéficiaire', true);
+        if (!cin)   return msg('retraitMsg','La pièce d\'identité est obligatoire', true);
         const {ok,data} = await api('POST','/api/retrait',{
-            transferCode: currentTransfer.transferCode,
-            recipientPhone: phone
+            transferCode:   currentTransfer.transferCode,
+            recipientPhone: phone,
+            recipientCIN:   cin
         });
         if (!ok) return msg('retraitMsg', data?.message||'Erreur retrait', true);
         document.getElementById('transferPreview').style.display='none';
-        document.getElementById('successAmt').textContent = `${currentTransfer.convertedAmount ?? currentTransfer.amount} ${currentTransfer.targetCurrency ?? currentTransfer.currency}`;
+        document.getElementById('successAmt').textContent = `${currentTransfer.paidAmount ?? currentTransfer.convertedAmount ?? currentTransfer.amount}`;
         document.getElementById('successBen').textContent = `Payé à : ${currentTransfer.recipientName}`;
         document.getElementById('successRef').textContent = `Réf : ${currentTransfer.transferCode}`;
         document.getElementById('retraitSuccess').style.display='block';
@@ -596,15 +669,38 @@
     async function clientSearch() {
         const code = document.getElementById('clientSearchCode').value.trim();
         if (!code) return;
-        const {ok,data} = await api('GET',`/api/client/transfers/${code}`);
+        const {ok,data} = await api('GET',`/api/client/transfert/${code}`);
         const el = document.getElementById('clientSearchResult');
         if (!ok) { el.innerHTML=`<span style="color:#e74c3c">${data?.message||'Introuvable'}</span>`; return; }
-        const t = data.data||data;
+        const t = data;
         el.innerHTML = `<div class="card" style="background:#f8fafc;box-shadow:none;border:1.5px solid #e0e0e0;padding:14px">
-    <div class="tc-row"><span class="tc-label">Code</span><span class="tc-val">${t.transferCode}</span></div>
-    <div class="tc-row"><span class="tc-label">Bénéficiaire</span><span class="tc-val">${t.recipientName}</span></div>
-    <div class="tc-row"><span class="tc-label">Montant</span><span class="tc-val">${t.amount} ${t.currency} → ${t.convertedAmount} ${t.targetCurrency}</span></div>
-    <div class="tc-row"><span class="tc-label">Statut</span>${statusBadge(t.status)}</div>
+    <div class="tc-row"><span class="tc-label">Code</span><span class="tc-val">${t.code}</span></div>
+    <div class="tc-row"><span class="tc-label">Bénéficiaire</span><span class="tc-val">${t.beneficiaire}</span></div>
+    <div class="tc-row"><span class="tc-label">Pays destination</span><span class="tc-val">${t.paysDestination}</span></div>
+    <div class="tc-row"><span class="tc-label">Montant</span><span class="tc-val">${t.montant} ${t.devise}</span></div>
+    <div class="tc-row"><span class="tc-label">Statut</span>${statusBadge(t.statut)}</div>
+    <div class="tc-row"><span class="tc-label">Date</span><span class="tc-val">${t.date?.substring(0,16)||'—'}</span></div>
+  </div>`;
+    }
+
+    async function suivrePublic() {
+        const code = document.getElementById('publicCode').value.trim();
+        if (!code) return;
+        const r = await fetch(`${BASE}/api/client/transfert/${code}`);
+        const el = document.getElementById('publicResult');
+        if (!r.ok) {
+            const j = await r.json().catch(()=>({}));
+            el.innerHTML = `<span style="color:#e74c3c">${j?.message||'Transfert introuvable'}</span>`;
+            return;
+        }
+        const t = await r.json();
+        el.innerHTML = `<div class="card" style="background:#f8fafc;box-shadow:none;border:1.5px solid #e0e0e0;padding:16px">
+    <div class="tc-row"><span class="tc-label">Code</span><span class="tc-val">${t.code}</span></div>
+    <div class="tc-row"><span class="tc-label">Bénéficiaire</span><span class="tc-val">${t.beneficiaire}</span></div>
+    <div class="tc-row"><span class="tc-label">Pays destination</span><span class="tc-val">${t.paysDestination}</span></div>
+    <div class="tc-row"><span class="tc-label">Montant</span><span class="amount-big">${t.montant} ${t.devise}</span></div>
+    <div class="tc-row"><span class="tc-label">Statut</span>${statusBadge(t.statut)}</div>
+    <div class="tc-row"><span class="tc-label">Date</span><span class="tc-val">${t.date?.substring(0,16)||'—'}</span></div>
   </div>`;
     }
 

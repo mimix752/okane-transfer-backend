@@ -242,18 +242,25 @@ public class AgencyServiceImpl implements AgencyService {
     @Transactional
     @Override
     public void checkAndDeductBalance(Long agencyId, BigDecimal amount) {
+        BigDecimal currentBalance = (BigDecimal) entityManager
+                .createNativeQuery("SELECT current_balance FROM agency WHERE id = :id")
+                .setParameter("id", agencyId)
+                .getSingleResult();
+
         Agency agency = findOrThrow(agencyId);
-        
-        if (agency.getCurrentBalance().compareTo(amount) < 0) {
+
+        if (currentBalance == null || currentBalance.compareTo(amount) < 0) {
             throw new InsufficientFundsException(
-                "Solde insuffisant dans l'agence " + agency.getName() + 
-                ". Solde disponible: " + agency.getCurrentBalance() + 
+                "Solde insuffisant dans l'agence " + agency.getName() +
+                ". Solde disponible: " + currentBalance +
                 ", Montant requis: " + amount
             );
         }
-        
-        agency.setCurrentBalance(agency.getCurrentBalance().subtract(amount));
-        agencyRepository.save(agency);
+
+        entityManager.createNativeQuery("UPDATE agency SET current_balance = current_balance - :amount WHERE id = :id")
+                .setParameter("amount", amount)
+                .setParameter("id", agencyId)
+                .executeUpdate();
     }
 
     @Transactional

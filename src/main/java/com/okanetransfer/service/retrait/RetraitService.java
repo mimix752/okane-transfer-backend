@@ -4,11 +4,10 @@ import com.okanetransfer.dto.request.RetraitRequestDTO;
 import com.okanetransfer.dto.response.RetraitResponseDTO;
 import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.enums.TransferStatus;
-import com.okanetransfer.exception.TransferNotFoundException;
-import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.service.AgencyService;
 import com.okanetransfer.service.AgentAuditService;
 import com.okanetransfer.service.ReceiptPrintingService;
+import com.okanetransfer.service.caisse.CashRegisterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,23 +18,25 @@ import java.time.LocalDateTime;
 @Service
 public class RetraitService {
 
-    @Autowired private TransferRepository transferRepository;
     @Autowired private VerificationRetraitService verificationService;
     @Autowired private AgencyService agencyService;
     @Autowired private AgentAuditService agentAuditService;
     @Autowired private ReceiptPrintingService receiptPrintingService;
+    @Autowired private CashRegisterService cashRegisterService;
 
     @Transactional
     public RetraitResponseDTO retirer(RetraitRequestDTO dto) {
-        Transfer t = transferRepository.findByCode(dto.getTransferCode())
-                .orElseThrow(() -> new TransferNotFoundException("Transfert introuvable: " + dto.getTransferCode()));
+        Transfer t = verificationService.findByCodeOrPhone(dto.getTransferCode(), dto.getRecipientPhone());
 
-        verificationService.verifier(t, dto.getRecipientPhone());
+        verificationService.verifier(t, dto.getRecipientPhone(), dto.getRecipientCIN());
 
         // Restaurer le solde à l'agence de destination lors du retrait
         agencyService.addBalance(t.getAgency().getId(), t.getAmount());
 
         t.setStatus(TransferStatus.PAID);
+
+        // Mettre à jour la caisse (crédit lors du retrait) - géré via endpoint caisse
+
         
         // Enregistrer dans l'audit trail
         agentAuditService.logTransferWithdrawal(
@@ -47,6 +48,11 @@ public class RetraitService {
         // Imprimer le reçu de retrait
         String receiptContent = receiptPrintingService.generateWithdrawalReceipt(t);
         receiptPrintingService.printReceipt(receiptContent);
+        return toDTO(t);
+    }
+
+    public RetraitResponseDTO rechercher(String code, String telephone) {
+        Transfer t = verificationService.findByCodeOrPhone(code, telephone);
         return toDTO(t);
     }
 

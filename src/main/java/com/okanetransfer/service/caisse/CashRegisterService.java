@@ -1,8 +1,10 @@
 package com.okanetransfer.service.caisse;
 
 import com.okanetransfer.entity.Agent;
+import com.okanetransfer.entity.CashOperation;
 import com.okanetransfer.entity.CashRegister;
 import com.okanetransfer.repository.AgentRepository;
+import com.okanetransfer.repository.CashOperationRepository;
 import com.okanetransfer.repository.CashRegisterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ public class CashRegisterService {
 
     @Autowired private CashRegisterRepository cashRegisterRepository;
     @Autowired private AgentRepository agentRepository;
+    @Autowired private CashOperationRepository cashOperationRepository;
 
     @Transactional
     public CashRegister ouvrirCaisse(Long agentId) {
@@ -36,9 +39,18 @@ public class CashRegisterService {
     }
 
     @Transactional
-    public void crediter(Long agentId, BigDecimal montant) {
+    public void crediter(Long agentId, BigDecimal montant, String type, String transferCode) {
         CashRegister caisse = cashRegisterRepository.findOpenByAgentId(agentId)
                 .orElseThrow(() -> new RuntimeException("Aucune caisse ouverte pour cet agent"));
-        caisse.setBalance(caisse.getBalance().add(montant));
+        BigDecimal newBalance = caisse.getBalance().add(montant);
+        caisse.setBalance(newBalance);
+
+        CashOperation op = new CashOperation();
+        op.setCashRegister(caisse);
+        op.setType(type);
+        op.setAmount(montant);
+        op.setBalanceAfter(newBalance);
+        op.setTransferCode(transferCode);
+        cashOperationRepository.save(op);
     }
 }

@@ -28,6 +28,15 @@ public class TransferRepository {
         return Optional.ofNullable(em.find(Transfer.class, id));
     }
 
+    public Optional<Transfer> findByRecipientPhone(String phone) {
+        return em.createQuery(
+                        "SELECT t FROM Transfer t WHERE t.recipientPhone = :phone AND t.status = 'PENDING' ORDER BY t.createdAt DESC",
+                        Transfer.class)
+                .setParameter("phone", phone)
+                .getResultStream()
+                .findFirst();
+    }
+
     public Optional<Transfer> findByCode(String code) {
         return em.createQuery(
                         "SELECT t FROM Transfer t WHERE t.transferCode = :code",

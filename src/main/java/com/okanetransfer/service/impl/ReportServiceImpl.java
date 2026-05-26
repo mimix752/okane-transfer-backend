@@ -96,7 +96,9 @@ public class ReportServiceImpl implements ReportService {
                 .map(Transfer::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalFees = BigDecimal.ZERO;
+        BigDecimal totalFees = transfers.stream()
+                .map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         int totalTransfers = transfers.size();
 
@@ -141,6 +143,9 @@ public class ReportServiceImpl implements ReportService {
             BigDecimal vol = ag.stream()
                     .map(Transfer::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal agFees = ag.stream()
+                    .map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             byAgency.add(
                     ReportResponseDTO.AgencyReportLine.builder()
@@ -148,7 +153,7 @@ public class ReportServiceImpl implements ReportService {
                             .agencyName(first.getAgency().getName())
                             .country(first.getAgency().getCountry())
                             .volume(vol)
-                            .fees(BigDecimal.ZERO)
+                            .fees(agFees)
                             .transferCount(ag.size())
                             .build()
             );
@@ -177,13 +182,17 @@ public class ReportServiceImpl implements ReportService {
                         ct.get(0).getTargetCurrency().name();
             }
 
+            BigDecimal corridorFees = ct.stream()
+                    .map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             byCorridor.add(
                     ReportResponseDTO.CorridorReportLine.builder()
                             .sourceCountry(currencyCode)
                             .destinationCountry(targetCurrencyName)
                             .label(currencyCode + " → " + targetCurrencyName)
                             .volume(entry.getValue())
-                            .fees(BigDecimal.ZERO)
+                            .fees(corridorFees)
                             .transferCount(ct.size())
                             .build()
             );

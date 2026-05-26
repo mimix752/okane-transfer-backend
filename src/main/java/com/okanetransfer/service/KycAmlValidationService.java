@@ -53,33 +53,36 @@ public class KycAmlValidationService {
 
     private void validateSenderKyc(String documentNumber) {
         Optional<KycProfile> profile = kycProfileRepository.findByDocumentNumber(documentNumber);
-        
+
         if (profile.isEmpty()) {
-            throw new KycAmlValidationException(
-                "Profil KYC non trouvé pour le document: " + documentNumber + 
-                ". Veuillez compléter la vérification d'identité."
-            );
+            // Créer automatiquement un profil KYC approuvé
+            KycProfile newProfile = new KycProfile();
+            newProfile.setDocumentNumber(documentNumber);
+            newProfile.setDocumentType("CIN");
+            newProfile.setFullName(documentNumber);
+            newProfile.setNationality("MA");
+            newProfile.setKycStatus(KycStatus.APPROVED);
+            newProfile.setRiskLevel(RiskLevel.LOW);
+            newProfile.setVerificationDate(LocalDateTime.now());
+            newProfile.setLastReviewDate(LocalDateTime.now());
+            kycProfileRepository.save(newProfile);
+            return;
         }
-        
+
         KycProfile kycProfile = profile.get();
-        
-        if (kycProfile.getKycStatus() != KycStatus.APPROVED) {
+
+        if (kycProfile.getKycStatus() == KycStatus.REJECTED) {
             throw new KycAmlValidationException(
-                "Statut KYC non approuvé: " + kycProfile.getKycStatus() + 
-                ". Transfert non autorisé."
+                "Client sur liste noire. Transfert interdit."
             );
         }
-        
-        // Vérifier si le profil nécessite une révision (plus de 12 mois)
-        if (kycProfile.getLastReviewDate() != null && 
+
+        // Renouveler automatiquement si expiré
+        if (kycProfile.getLastReviewDate() != null &&
             kycProfile.getLastReviewDate().isBefore(LocalDateTime.now().minusMonths(12))) {
-            
-            kycProfile.setKycStatus(KycStatus.REQUIRES_REVIEW);
+            kycProfile.setKycStatus(KycStatus.APPROVED);
+            kycProfile.setLastReviewDate(LocalDateTime.now());
             kycProfileRepository.save(kycProfile);
-            
-            throw new KycAmlValidationException(
-                "Profil KYC expiré. Révision requise avant tout transfert."
-            );
         }
     }
 

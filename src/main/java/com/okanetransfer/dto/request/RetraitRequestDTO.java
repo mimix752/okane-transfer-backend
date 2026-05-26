@@ -4,18 +4,15 @@ import jakarta.validation.constraints.NotBlank;
 
 public class RetraitRequestDTO {
 
-    @NotBlank
     private String transferCode;
 
     @NotBlank
     private String recipientPhone;
 
-    public RetraitRequestDTO() {
-    }
+    @NotBlank
+    private String recipientCIN;
 
-    public RetraitRequestDTO(String transferCode, String recipientPhone) {
-        this.transferCode = transferCode;
-        this.recipientPhone = recipientPhone;
+    public RetraitRequestDTO() {
     }
 
     public String getTransferCode() {
@@ -32,5 +29,13 @@ public class RetraitRequestDTO {
 
     public void setRecipientPhone(String recipientPhone) {
         this.recipientPhone = recipientPhone;
+    }
+
+    public String getRecipientCIN() {
+        return recipientCIN;
+    }
+
+    public void setRecipientCIN(String recipientCIN) {
+        this.recipientCIN = recipientCIN;
     }
 }

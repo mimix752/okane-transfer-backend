@@ -35,6 +35,8 @@ public class EnvoiRequestDTO {
     @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Invalid phone format")
     private String recipientPhone;
 
+    private String recipientCIN;
+
     @NotBlank(message = "Recipient country is required")
     @Size(min = 2, max = 3, message = "Country code must be 2-3 characters")
     private String recipientCountry;

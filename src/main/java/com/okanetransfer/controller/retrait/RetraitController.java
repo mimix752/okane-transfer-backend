@@ -19,4 +19,11 @@ public class RetraitController {
     public ResponseEntity<RetraitResponseDTO> retirer(@Valid @RequestBody RetraitRequestDTO dto) {
         return ResponseEntity.ok(retraitService.retirer(dto));
     }
+
+    @GetMapping("/recherche")
+    public ResponseEntity<RetraitResponseDTO> rechercher(
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String telephone) {
+        return ResponseEntity.ok(retraitService.rechercher(code, telephone));
+    }
 }

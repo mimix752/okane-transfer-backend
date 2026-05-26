@@ -50,13 +50,19 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     new AntPathRequestMatcher("/api/auth/**"),
+                    new AntPathRequestMatcher("/api/client/**"),
                     new AntPathRequestMatcher("/v3/api-docs/**"),
                     new AntPathRequestMatcher("/swagger-ui/**"),
                     new AntPathRequestMatcher("/swagger-ui.html"),
                     new AntPathRequestMatcher("/swagger.html"),
                     new AntPathRequestMatcher("/webjars/**"),
                     new AntPathRequestMatcher("/favicon.ico"),
-                    new AntPathRequestMatcher("/")
+                    new AntPathRequestMatcher("/"),
+                    new AntPathRequestMatcher("/*.html"),
+                    new AntPathRequestMatcher("/*.jsp"),
+                    new AntPathRequestMatcher("/css/**"),
+                    new AntPathRequestMatcher("/js/**"),
+                    new AntPathRequestMatcher("/images/**")
                 ).permitAll()
                 .anyRequest().authenticated()
             )
