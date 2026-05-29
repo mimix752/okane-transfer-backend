@@ -42,4 +42,29 @@ public class NotificationService {
     public void printReceipt(String receipt) {
         // TODO: Intégrer imprimante thermique
     }
+    public void sendProfileUpdateNotification(String email, String username) {
+        String message = String.format(
+                "Bonjour %s,\n\nVotre profil Okane Transfer a été mis à jour avec succès.\n\nCordialement,\nOkane Transfer",
+                username
+        );
+        // TODO: Intégrer API Email (JavaMail, SendGrid, etc.)
+        System.out.println("NOTIFICATION EMAIL [" + email + "]: " + message);
+    }
+
+    public void sendAccountDeletionNotification(String email, String username) {
+        String message = String.format(
+                "Bonjour %s,\n\nVotre compte Okane Transfer a été supprimé conformément au RGPD.\n\nCordialement,\nOkane Transfer",
+                username
+        );
+        // TODO: Intégrer API Email
+        System.out.println("NOTIFICATION EMAIL [" + email + "]: " + message);
+    }
+    public void sendStatusChangeNotification(String email, String username, String transferCode, String newStatus) {
+        String message = String.format(
+                "Bonjour %s,\n\nLe statut de votre transfert %s a changé : %s\n\nCordialement,\nOkane Transfer",
+                username, transferCode, newStatus
+        );
+        System.out.println("NOTIFICATION EMAIL [" + email + "]: " + message);
+        // TODO: Intégrer API Email (JavaMail, SendGrid, etc.)
+    }
 }

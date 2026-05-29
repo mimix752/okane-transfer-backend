@@ -2,6 +2,7 @@ package com.okanetransfer.controller;
 
 import com.okanetransfer.dto.request.LoginRequestDTO;
 import com.okanetransfer.dto.request.RegisterRequestDTO;
+import com.okanetransfer.dto.request.VerifyOtpRequestDTO;
 import com.okanetransfer.dto.response.AuthResponseDTO;
 import com.okanetransfer.service.AuthService;
 import com.okanetransfer.util.ApiResponse;
@@ -42,6 +43,19 @@ public class AuthController {
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success(
                         "Login successful",
+                        response
+                ));
+    }
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<AuthResponseDTO>> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequestDTO dto) {
+
+        AuthResponseDTO response = authService.verifyOtp(dto);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(
+                        "Authentification réussie",
                         response
                 ));
     }

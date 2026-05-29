@@ -1,5 +1,7 @@
 package com.okanetransfer.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Role;
 
 import java.time.LocalDateTime;
@@ -8,16 +10,31 @@ public class UserResponseDTO {
 
     private Long id;
     private String username;
+    private String firstName;
+    private String lastName;
     private String email;
     private String phone;
     private String country;
     private Role role;
     private boolean active;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
     public UserResponseDTO() {
     }
-
+    public static UserResponseDTO fromEntity(User user) {
+        UserResponseDTO dto = new UserResponseDTO();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setPhone(user.getPhone());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setRole(user.getRole());
+        dto.setActive(user.isEnabled());
+        dto.setCreatedAt(user.getCreatedAt());
+        return dto;
+    }
     public UserResponseDTO(Long id, String username, String email, String phone, String country, Role role, boolean active, LocalDateTime createdAt) {
         this.id = id;
         this.username = username;
@@ -91,5 +108,21 @@ public class UserResponseDTO {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 }

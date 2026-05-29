@@ -1,5 +1,6 @@
 package com.okanetransfer.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.okanetransfer.entity.Transfer;
 
 import java.math.BigDecimal;
@@ -18,7 +19,9 @@ public class TransferResponseDTO {
     private String targetCurrency;
     private String status;
     private String agencyName;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 
     public TransferResponseDTO() {

@@ -24,6 +24,22 @@ public class WebConfig implements WebMvcConfigurer {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // Fix pour SpringDoc : sérialiser byte[] comme JSON brut
+        com.fasterxml.jackson.databind.module.SimpleModule module =
+                new com.fasterxml.jackson.databind.module.SimpleModule();
+        module.addSerializer(byte[].class,
+                new com.fasterxml.jackson.databind.JsonSerializer<byte[]>() {
+                    @Override
+                    public void serialize(byte[] bytes,
+                                          com.fasterxml.jackson.core.JsonGenerator gen,
+                                          com.fasterxml.jackson.databind.SerializerProvider serializers)
+                            throws java.io.IOException {
+                        gen.writeRawValue(new String(bytes,
+                                java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                });
+        mapper.registerModule(module);
         return mapper;
     }
 
@@ -70,12 +86,4 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        ByteArrayHttpMessageConverter byteConverter = new ByteArrayHttpMessageConverter();
-        byteConverter.setSupportedMediaTypes(java.util.Arrays.asList(
-                org.springframework.http.MediaType.APPLICATION_JSON,
-                org.springframework.http.MediaType.APPLICATION_OCTET_STREAM,
-                org.springframework.http.MediaType.ALL
-        ));
-        converters.add(0, byteConverter);
-        converters.add(1, mappingJackson2HttpMessageConverter());
     }}

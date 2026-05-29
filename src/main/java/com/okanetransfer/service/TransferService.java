@@ -21,6 +21,9 @@ public class TransferService {
 
     @Autowired
     private AgencyService agencyService;
+    @Autowired
+    private NotificationService notificationService;
+
 
     @Transactional(readOnly = true)
     public TransferResponseDTO getById(Long id) {
@@ -74,7 +77,15 @@ public class TransferService {
 
         transfer.setStatus(newStatus);
         Transfer updated = transferRepository.save(transfer);
-
+        // Notifier le client du changement de statut
+        if (updated.getSender() != null && updated.getSender().getEmail() != null) {
+            notificationService.sendStatusChangeNotification(
+                    updated.getSender().getEmail(),
+                    updated.getSender().getUsername(),
+                    updated.getTransferCode(),
+                    newStatus.toString()
+            );
+        }
         return TransferResponseDTO.fromEntity(updated);
     }
 }
