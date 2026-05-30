@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "agent")
+@Table(name = "agents")
 @PrimaryKeyJoinColumn(name = "id")
 public class Agent extends User {
 

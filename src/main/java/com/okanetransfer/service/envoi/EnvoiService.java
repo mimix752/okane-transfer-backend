@@ -9,6 +9,7 @@ import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Currency;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.ResourceNotFoundException;
+import com.okanetransfer.repository.AgentRepository;
 import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.repository.UserRepository;
@@ -35,6 +36,8 @@ public class EnvoiService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private AgentRepository agentRepository;
 
     @Autowired
     private CorridorRepository corridorRepository;
@@ -69,14 +72,10 @@ public class EnvoiService {
     @Transactional
     public EnvoiResponseDTO createTransfer(EnvoiRequestDTO dto, Long agentId) {
 
-        // 1. Récupérer l'agent (expéditeur)
-        User agent = userRepository.findById(agentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Agent not found"));
+        // 1. Récupérer l'agent directement depuis AgentRepository
+        Agent agent = agentRepository.findByUserId(agentId)
+                .orElseThrow(() -> new IllegalArgumentException("User is not an agent"));
 
-        // 2. Vérifier que c'est bien un agent
-        if (!(agent instanceof Agent)) {
-            throw new IllegalArgumentException("User is not an agent");
-        }
 
         // 3. Récupérer le corridor
         Corridor corridor = corridorRepository.findById(dto.getCorridorId())
@@ -109,7 +108,7 @@ public class EnvoiService {
         }
 
         // 8. Vérifier le solde de l'agence
-        Long agencyId = ((Agent) agent).getAgency().getId();
+        Long agencyId = ( agent).getAgency().getId();
         agencyService.checkAndDeductBalance(agencyId, totalAmount);
 
         // 9. Générer le code de retrait unique
@@ -130,7 +129,7 @@ public class EnvoiService {
         transfer.setConvertedAmount(convertedAmount);
         transfer.setTargetCurrency(Currency.valueOf(targetCurrency));
         transfer.setStatus(TransferStatus.PENDING);
-        transfer.setAgency(((Agent) agent).getAgency());
+        transfer.setAgency((agent).getAgency());
         transfer.setCreatedAt(LocalDateTime.now());
 
         // 11. Sauvegarder en BD

@@ -5,8 +5,8 @@ import com.okanetransfer.repository.OtpCodeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Random;
 
 @Service
 public class OtpService {
@@ -14,17 +14,16 @@ public class OtpService {
     @Autowired
     private OtpCodeRepository otpCodeRepository;
 
-    public String generateAndSave(String username) {
-        // Générer un code à 6 chiffres
-        String code = String.format("%06d", new Random().nextInt(999999));
+    private final SecureRandom secureRandom = new SecureRandom();
 
-        // Expiration dans 5 minutes
+    public String generateAndSave(String username) {
+        String code = String.format("%06d", secureRandom.nextInt(1_000_000));
+
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(5);
 
         OtpCode otpCode = new OtpCode(username, code, expiresAt);
         otpCodeRepository.save(otpCode);
 
-        // TODO: Envoyer par SMS (Twilio, AWS SNS, etc.)
         System.out.println("OTP SMS [" + username + "]: Votre code de vérification est " + code);
 
         return code;
