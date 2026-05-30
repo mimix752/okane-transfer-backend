@@ -3,6 +3,7 @@ package com.okanetransfer.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.okanetransfer.entity.AgentAuditTrail;
+import com.okanetransfer.entity.Currency;
 import com.okanetransfer.repository.AgentAuditTrailRepository;
 import com.okanetransfer.util.SecurityUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,8 +60,8 @@ public class AgentAuditService {
     }
 
     @Transactional
-    public void logTransferCreation(Long transferId, String transferCode, String recipientName, 
-                                   String amount, String currency) {
+    public void logTransferCreation(Long transferId, String transferCode, String recipientName,
+                                    String amount, Currency currency) {
         logAgentAction(
             "CREATE_TRANSFER",
             "Transfer",

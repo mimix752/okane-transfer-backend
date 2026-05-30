@@ -2,11 +2,7 @@ package com.okanetransfer.service.envoi;
 
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
-import com.okanetransfer.entity.Agent;
-import com.okanetransfer.entity.Corridor;
-import com.okanetransfer.entity.Transfer;
-import com.okanetransfer.entity.User;
-import com.okanetransfer.enums.Currency;
+import com.okanetransfer.entity.*;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
@@ -99,7 +95,7 @@ public class EnvoiService {
         BigDecimal totalAmount = dto.getAmount().add(fees);
 
         // 7. Conversion de devise si nécessaire
-        String targetCurrency = corridor.getDestinationCurrency().getCode();
+        Currency targetCurrency = corridor.getDestinationCurrency();
         BigDecimal convertedAmount = dto.getAmount();
         
         if (!dto.getCurrency().equals(targetCurrency)) {
@@ -125,10 +121,10 @@ public class EnvoiService {
         transfer.setRecipientCountry(dto.getRecipientCountry());
         transfer.setSenderCountry(dto.getSenderCountry());
         transfer.setAmount(dto.getAmount());
-        transfer.setCurrency(Currency.valueOf(dto.getCurrency()));
+        transfer.setCurrency(dto.getCurrency());
         transfer.setFees(fees);
         transfer.setConvertedAmount(convertedAmount);
-        transfer.setTargetCurrency(Currency.valueOf(targetCurrency));
+        transfer.setTargetCurrency(targetCurrency);
         transfer.setStatus(TransferStatus.PENDING);
         transfer.setAgency(((Agent) agent).getAgency());
         transfer.setCreatedAt(LocalDateTime.now());

@@ -2,18 +2,27 @@ package com.okanetransfer.service.impl;
 
 import com.okanetransfer.dto.request.CorridorRequestDTO;
 import com.okanetransfer.dto.response.CorridorResponseDTO;
+import com.okanetransfer.dto.response.CorridorStatsResponseDTO;
 import com.okanetransfer.entity.Corridor;
 import com.okanetransfer.entity.Currency;
+import com.okanetransfer.entity.FeeGrid;
+import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.CurrencyRepository;
+import com.okanetransfer.repository.FeeGridRepository;
+import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.CorridorService;
 import com.okanetransfer.util.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,15 +31,20 @@ public class CorridorServiceImpl implements CorridorService {
     private final CorridorRepository corridorRepository;
     private final CurrencyRepository currencyRepository;
     private final AuditService       auditService;
+    private final TransferRepository transferRepository;
+    private final FeeGridRepository feeGridRepository;
 
     public CorridorServiceImpl(CorridorRepository corridorRepository,
                                CurrencyRepository currencyRepository,
-                               AuditService auditService) {
-        this.corridorRepository = corridorRepository;
-        this.currencyRepository = currencyRepository;
-        this.auditService       = auditService;
+                               AuditService auditLogService,
+                               TransferRepository transferRepository,
+                               FeeGridRepository feeGridRepository) {
+        this.corridorRepository  = corridorRepository;
+        this.currencyRepository  = currencyRepository;
+        this.auditService     = auditLogService;
+        this.transferRepository  = transferRepository;
+        this.feeGridRepository   = feeGridRepository;
     }
-
     // ─── Queries ───────────────────────────────────────────────
 
     @Override
@@ -203,5 +217,121 @@ public class CorridorServiceImpl implements CorridorService {
         return currencyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Currency not found with id: " + id));
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public CorridorStatsResponseDTO getStats(Long corridorId) {
+        Corridor corridor = findOrThrow(corridorId);
+        return buildStats(corridor);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CorridorStatsResponseDTO> getAllStats() {
+        return corridorRepository.findByActive(true)
+                .stream()
+                .map(this::buildStats)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    private CorridorStatsResponseDTO buildStats(Corridor corridor) {
+
+        LocalDateTime startOfDay   = LocalDate.now().atStartOfDay();
+        LocalDateTime startOfMonth =
+                LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Récupérer tous les transferts de la période mensuelle
+        List<Transfer> monthlyTransfers =
+                transferRepository.findByCreatedAtBetween(
+                                startOfMonth, now)
+                        .stream()
+                        .filter(t -> t.getAgency() != null
+                                && matchesCorridor(t, corridor))
+                        .collect(java.util.stream.Collectors.toList());
+
+        // Filtrer ceux du jour
+        List<Transfer> dailyTransfers = monthlyTransfers.stream()
+                .filter(t -> t.getCreatedAt() != null
+                        && !t.getCreatedAt().isBefore(startOfDay))
+                .collect(java.util.stream.Collectors.toList());
+
+        // Volumes
+        BigDecimal dailyVolume = dailyTransfers.stream()
+                .map(Transfer::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal monthlyVolume = monthlyTransfers.stream()
+                .map(Transfer::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // CA : calculer les frais pour chaque transfert
+        BigDecimal dailyRevenue   = BigDecimal.ZERO;
+        BigDecimal monthlyRevenue = BigDecimal.ZERO;
+        BigDecimal agencyCommission   = BigDecimal.ZERO;
+        BigDecimal centralCommission  = BigDecimal.ZERO;
+
+        for (Transfer t : monthlyTransfers) {
+            // Trouver la grille tarifaire applicable
+            Optional<FeeGrid> gridOpt = feeGridRepository
+                    .findApplicable(corridor.getId(), t.getAmount());
+
+            if (gridOpt.isPresent()) {
+                FeeGrid grid = gridOpt.get();
+
+                // Calculer les frais
+                BigDecimal fee = grid.getFixedFee().add(
+                        t.getAmount()
+                                .multiply(grid.getPercentageFee())
+                                .divide(BigDecimal.valueOf(100), 2,
+                                        java.math.RoundingMode.HALF_UP)
+                );
+
+                monthlyRevenue = monthlyRevenue.add(fee);
+
+                // Répartition
+                BigDecimal agencyPart = fee
+                        .multiply(grid.getAgencyShare())
+                        .divide(BigDecimal.valueOf(100), 2,
+                                java.math.RoundingMode.HALF_UP);
+                BigDecimal centralPart = fee.subtract(agencyPart);
+
+                agencyCommission  = agencyCommission.add(agencyPart);
+                centralCommission = centralCommission.add(centralPart);
+
+                // CA jour
+                if (!t.getCreatedAt().isBefore(startOfDay)) {
+                    dailyRevenue = dailyRevenue.add(fee);
+                }
+            }
+        }
+
+        String label = corridor.getSourceCountry()
+                + " → " + corridor.getDestinationCountry();
+
+        return CorridorStatsResponseDTO.builder()
+                .corridorId(corridor.getId())
+                .label(label)
+                .sourceCountry(corridor.getSourceCountry())
+                .destinationCountry(corridor.getDestinationCountry())
+                .dailyVolume(dailyVolume)
+                .monthlyVolume(monthlyVolume)
+                .dailyCount(dailyTransfers.size())
+                .monthlyCount(monthlyTransfers.size())
+                .dailyRevenue(dailyRevenue)
+                .monthlyRevenue(monthlyRevenue)
+                .agencyCommission(agencyCommission)
+                .centralCommission(centralCommission)
+                .build();
+    }
+
+    // Vérifie si un transfert appartient à ce corridor
+// en comparant les devises source/destination
+    private boolean matchesCorridor(Transfer t, Corridor corridor) {
+        if (t.getCurrency() == null) return false;
+        String transferCurrency = t.getCurrency().getName();
+        String corridorFromCode =
+                corridor.getSourceCurrency().getCode();
+        return transferCurrency.equals(corridorFromCode);
     }
 }

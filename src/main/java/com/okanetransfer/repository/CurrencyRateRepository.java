@@ -1,5 +1,6 @@
 package com.okanetransfer.repository;
 
+import com.okanetransfer.entity.Currency;
 import com.okanetransfer.entity.CurrencyRate;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,10 +15,10 @@ import java.util.Optional;
 public interface CurrencyRateRepository extends JpaRepository<CurrencyRate, Long> {
 
     Optional<CurrencyRate> findByFromCurrencyAndToCurrencyAndActiveTrueOrderByCreatedAtDesc(
-        String fromCurrency, String toCurrency);
+            Currency fromCurrency, Currency toCurrency);
 
     List<CurrencyRate> findByFromCurrencyAndToCurrencyOrderByCreatedAtDesc(
-        String fromCurrency, String toCurrency);
+        Currency fromCurrency, Currency toCurrency);
 
     @Query("""
         SELECT r FROM CurrencyRate r
