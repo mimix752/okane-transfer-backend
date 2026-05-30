@@ -68,7 +68,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private boolean isPublicUrl(String requestPath) {
         for (String publicUrl : PUBLIC_URLS) {
-            if (requestPath.contains(publicUrl)) {
+            if (requestPath.startsWith(publicUrl)) {
                 return true;
             }
         }
