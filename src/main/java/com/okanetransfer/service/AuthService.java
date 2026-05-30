@@ -7,6 +7,7 @@ import com.okanetransfer.dto.response.AuthResponseDTO;
 import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Role;
 import com.okanetransfer.exception.ResourceNotFoundException;
+import com.okanetransfer.repository.AgentRepository;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.security.JwtTokenProvider;
 import com.okanetransfer.security.OtpService;
@@ -24,6 +25,7 @@ public class AuthService {
     @Autowired private JwtTokenProvider jwtTokenProvider;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private OtpService otpService;
+    @Autowired private AgentRepository agentRepository;
 
     // ─── Register ────────────────────────────────────────────────────────────────
 
@@ -98,6 +100,10 @@ public class AuthService {
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setRole(user.getRole().toString());
+        if (user.getRole() == Role.AGENT) {
+            agentRepository.findById(user.getId())
+                    .ifPresent(agent -> response.setAgentId(agent.getId()));
+        }
         return response;
     }
 
@@ -153,6 +159,10 @@ public class AuthService {
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setRole(user.getRole().toString());
+        if (user.getRole() == Role.AGENT) {
+            agentRepository.findById(user.getId())
+                    .ifPresent(agent -> response.setAgentId(agent.getId()));
+        }
         return response;
     }
 }

@@ -8,6 +8,7 @@ public class AuthResponseDTO {
     private String email;
     private String role;
     private boolean requiresOtp = false;
+    private Long agentId;
 
     public AuthResponseDTO() {
     }
@@ -37,4 +38,7 @@ public class AuthResponseDTO {
 
     public boolean isRequiresOtp() { return requiresOtp; }
     public void setRequiresOtp(boolean requiresOtp) { this.requiresOtp = requiresOtp; }
+
+    public Long getAgentId() { return agentId; }
+    public void setAgentId(Long agentId) { this.agentId = agentId; }
 }

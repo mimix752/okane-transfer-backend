@@ -44,7 +44,10 @@ public class AgentAuditService {
             HttpServletRequest request = attributes.getRequest();
             audit.setIpAddress(getClientIpAddress(request));
             audit.setUserAgent(request.getHeader("User-Agent"));
-            audit.setSessionId(request.getSession().getId());
+            try {
+                jakarta.servlet.http.HttpSession session = request.getSession(false);
+                audit.setSessionId(session != null ? session.getId() : null);
+            } catch (Exception ignored) {}
         }
         
         // Sérialiser les valeurs en JSON

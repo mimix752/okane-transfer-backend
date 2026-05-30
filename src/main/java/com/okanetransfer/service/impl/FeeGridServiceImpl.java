@@ -11,6 +11,7 @@ import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.FeeGridService;
 import com.okanetransfer.util.SecurityUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -68,7 +69,7 @@ public class FeeGridServiceImpl implements FeeGridService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public BigDecimal calculateFee(Long corridorId,
                                    BigDecimal amount) {
         FeeGrid feeGrid = feeGridRepository

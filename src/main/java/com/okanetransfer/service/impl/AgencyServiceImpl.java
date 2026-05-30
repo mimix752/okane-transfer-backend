@@ -17,6 +17,7 @@ import com.okanetransfer.util.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -45,8 +46,7 @@ public class AgencyServiceImpl implements AgencyService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<AgencyResponseDTO> getAllAgencies(String country,
-                                                  Boolean active) {
+    public List<AgencyResponseDTO> getAllAgencies(String country, Boolean active) {
         List<Agency> agencies;
 
         if (country != null && active != null) {
@@ -78,7 +78,6 @@ public class AgencyServiceImpl implements AgencyService {
     @Transactional
     @Override
     public AgencyResponseDTO create(AgencyRequestDTO dto, String adminIp) {
-
         Agency agency = new Agency();
         agency.setName(dto.getName());
         agency.setAddress(dto.getAddress());
@@ -105,8 +104,7 @@ public class AgencyServiceImpl implements AgencyService {
 
     @Transactional
     @Override
-    public AgencyResponseDTO update(Long id, AgencyRequestDTO dto,
-                                    String adminIp) {
+    public AgencyResponseDTO update(Long id, AgencyRequestDTO dto, String adminIp) {
         Agency agency = findOrThrow(id);
 
         String     oldName       = agency.getName();
@@ -143,8 +141,7 @@ public class AgencyServiceImpl implements AgencyService {
     @Transactional
     @Override
     public void toggle(Long id, String adminIp) {
-
-        Agency agency = findOrThrow(id);
+        Agency agency  = findOrThrow(id);
         boolean previous = agency.isActive();
         agency.setActive(!previous);
         agencyRepository.save(agency);
@@ -154,9 +151,7 @@ public class AgencyServiceImpl implements AgencyService {
                 previous ? "DISABLE_AGENCY" : "ENABLE_AGENCY",
                 "Agency",
                 id,
-                "old=" + previous
-                        + " | new=" + !previous
-                        + " | ip=" + adminIp
+                "old=" + previous + " | new=" + !previous + " | ip=" + adminIp
         );
     }
 
@@ -166,8 +161,7 @@ public class AgencyServiceImpl implements AgencyService {
         Agency agency = findOrThrow(agencyId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "User not found with id: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
         entityManager.createQuery("UPDATE User u SET u.role = :role WHERE u.id = :id")
                 .setParameter("role", Role.AGENT)
@@ -175,8 +169,8 @@ public class AgencyServiceImpl implements AgencyService {
                 .executeUpdate();
 
         entityManager.createNativeQuery(
-                "INSERT INTO agent (id, agency_id, active) VALUES (:id, :agencyId, true) " +
-                "ON CONFLICT (id) DO UPDATE SET agency_id = :agencyId, active = true")
+                        "INSERT INTO agent (id, agency_id, active) VALUES (:id, :agencyId, true) " +
+                                "ON CONFLICT (id) DO UPDATE SET agency_id = :agencyId, active = true")
                 .setParameter("id", userId)
                 .setParameter("agencyId", agencyId)
                 .executeUpdate();
@@ -186,26 +180,21 @@ public class AgencyServiceImpl implements AgencyService {
                 "ADD_AGENT",
                 "Agency",
                 agencyId,
-                "userId=" + userId
-                        + " | username=" + user.getUsername()
-                        + " | ip=" + adminIp
+                "userId=" + userId + " | username=" + user.getUsername() + " | ip=" + adminIp
         );
     }
 
     @Transactional
     @Override
     public void removeAgent(Long agencyId, Long userId, String adminIp) {
-
         Agent agent = agentRepository.findByAgency_Id(agencyId)
                 .stream()
                 .filter(a -> a.getId().equals(userId))
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Agent not found for agencyId="
-                                + agencyId + " userId=" + userId));
+                        "Agent not found for agencyId=" + agencyId + " userId=" + userId));
 
         String username = agent.getUsername();
-
         agent.setActive(false);
         agentRepository.save(agent);
 
@@ -214,16 +203,13 @@ public class AgencyServiceImpl implements AgencyService {
                 "REMOVE_AGENT",
                 "Agency",
                 agencyId,
-                "userId=" + userId
-                        + " | username=" + username
-                        + " | ip=" + adminIp
+                "userId=" + userId + " | username=" + username + " | ip=" + adminIp
         );
     }
 
     @Transactional(readOnly = true)
     @Override
     public AgencyPerformanceResponseDTO getPerformance(Long id) {
-
         Agency agency    = findOrThrow(id);
         int    agentCount = agentRepository.findByAgency_Id(id).size();
 
@@ -235,11 +221,15 @@ public class AgencyServiceImpl implements AgencyService {
         dto.setOperationCount(agentCount);
         dto.setDailyRevenue(BigDecimal.ZERO);
         dto.setMonthlyRevenue(BigDecimal.ZERO);
-
         return dto;
     }
 
-    @Transactional
+    /**
+     * REQUIRES_NEW : s'exécute dans sa propre transaction isolée.
+     * Si InsufficientFundsException est levée, elle remonte proprement
+     * sans marquer la transaction parente (EnvoiService) comme rollback-only.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Override
     public void checkAndDeductBalance(Long agencyId, BigDecimal amount) {
         BigDecimal currentBalance = (BigDecimal) entityManager
@@ -251,13 +241,14 @@ public class AgencyServiceImpl implements AgencyService {
 
         if (currentBalance == null || currentBalance.compareTo(amount) < 0) {
             throw new InsufficientFundsException(
-                "Solde insuffisant dans l'agence " + agency.getName() +
-                ". Solde disponible: " + currentBalance +
-                ", Montant requis: " + amount
+                    "Solde insuffisant dans l'agence " + agency.getName() +
+                            ". Solde disponible: " + currentBalance +
+                            ", Montant requis: " + amount
             );
         }
 
-        entityManager.createNativeQuery("UPDATE agency SET current_balance = current_balance - :amount WHERE id = :id")
+        entityManager.createNativeQuery(
+                        "UPDATE agency SET current_balance = current_balance - :amount WHERE id = :id")
                 .setParameter("amount", amount)
                 .setParameter("id", agencyId)
                 .executeUpdate();
@@ -275,13 +266,11 @@ public class AgencyServiceImpl implements AgencyService {
 
     private Agency findOrThrow(Long id) {
         return agencyRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Agency not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Agency not found with id: " + id));
     }
 
     private AgencyResponseDTO toDTO(Agency agency) {
-        int agentCount = agentRepository
-                .findByAgency_Id(agency.getId()).size();
+        int agentCount = agentRepository.findByAgency_Id(agency.getId()).size();
 
         AgencyResponseDTO dto = new AgencyResponseDTO();
         dto.setId(agency.getId());
@@ -292,7 +281,6 @@ public class AgencyServiceImpl implements AgencyService {
         dto.setDailyLimit(agency.getDailyLimit());
         dto.setCurrentBalance(agency.getCurrentBalance());
         dto.setActive(agency.isActive());
-
         return dto;
     }
 }

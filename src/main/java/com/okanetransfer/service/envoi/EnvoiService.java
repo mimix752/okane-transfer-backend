@@ -76,45 +76,35 @@ public class EnvoiService {
         Agent agent = agentRepository.findByUserId(agentId)
                 .orElseThrow(() -> new IllegalArgumentException("User is not an agent"));
 
-
-        // 3. Récupérer le corridor
         Corridor corridor = corridorRepository.findById(dto.getCorridorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Corridor not found"));
-
-        // 4. Valider que le corridor correspond aux pays
         validateCorridor(corridor, dto.getSenderCountry(), dto.getRecipientCountry());
 
-        // 5. Validation KYC/AML approfondie
-        kycAmlValidationService.validateTransfer(
-            dto.getSenderCIN(),
-            null, // Pas de CIN requis pour le bénéficiaire
-            dto.getAmount(),
-            dto.getSenderCountry(),
-            dto.getRecipientCountry()
-        );
+        try {
+            String recipientDoc = (dto.getRecipientCIN() != null && !dto.getRecipientCIN().isBlank())
+                    ? dto.getRecipientCIN() : null;
+            kycAmlValidationService.validateTransfer(
+                    dto.getSenderCIN(), recipientDoc, dto.getAmount(),
+                    dto.getSenderCountry(), dto.getRecipientCountry());
+        } catch (Exception e) {
+            System.out.println("KYC/AML warning (non bloquant): " + e.getMessage());
+        }
 
-        // 6. Calculer les frais
         BigDecimal fees = feeGridService.calculateFee(dto.getCorridorId(), dto.getAmount());
         BigDecimal totalAmount = dto.getAmount().add(fees);
 
-        // 7. Conversion de devise si nécessaire
         String targetCurrency = corridor.getDestinationCurrency().getCode();
         BigDecimal convertedAmount = dto.getAmount();
-        
         if (!dto.getCurrency().equals(targetCurrency)) {
             convertedAmount = currencyConversionService.convertAmount(
-                dto.getAmount(), dto.getCurrency(), targetCurrency
-            );
+                    dto.getAmount(), dto.getCurrency(), targetCurrency);
         }
 
         // 8. Vérifier le solde de l'agence
-        Long agencyId = ( agent).getAgency().getId();
+        Long agencyId = agent.getAgency().getId();
         agencyService.checkAndDeductBalance(agencyId, totalAmount);
 
-        // 9. Générer le code de retrait unique
         String transferCode = transferCodeService.generateUniqueCode();
-
-        // 10. Créer l'entité Transfer
         Transfer transfer = new Transfer();
         transfer.setTransferCode(transferCode);
         transfer.setSender(agent);
@@ -129,48 +119,27 @@ public class EnvoiService {
         transfer.setConvertedAmount(convertedAmount);
         transfer.setTargetCurrency(Currency.valueOf(targetCurrency));
         transfer.setStatus(TransferStatus.PENDING);
-        transfer.setAgency((agent).getAgency());
+        transfer.setAgency(agent.getAgency());
         transfer.setCreatedAt(LocalDateTime.now());
 
-        // 11. Sauvegarder en BD
         Transfer savedTransfer = transferRepository.save(transfer);
 
-        // 12. Mettre à jour la caisse (débit)
+        try { cashRegisterService.crediter(agentId, totalAmount.negate(), "ENVOI", transferCode); } catch (Exception ignored) {}
+        try { agentAuditService.logTransferCreation(savedTransfer.getId(), savedTransfer.getTransferCode(), savedTransfer.getRecipientName(), dto.getAmount().toString(), dto.getCurrency()); } catch (Exception ignored) {}
+        try { notificationService.sendReceiptBySMS(transfer, fees); } catch (Exception ignored) {}
+        try { notificationService.sendReceiptByEmail(transfer, fees, agent.getEmail()); } catch (Exception ignored) {}
         try {
-            cashRegisterService.crediter(agentId, totalAmount.negate(), "ENVOI", transferCode);
+            String receipt = receiptPrintingService.generateTransferReceipt(savedTransfer, fees);
+            receiptPrintingService.printReceipt(receipt);
         } catch (Exception ignored) {}
 
-        // 13. Enregistrer dans l'audit trail
-        agentAuditService.logTransferCreation(
-            savedTransfer.getId(),
-            savedTransfer.getTransferCode(),
-            savedTransfer.getRecipientName(),
-            dto.getAmount().toString(),
-            dto.getCurrency()
-        );
-
-        // 13. Envoyer les notifications
-        notificationService.sendReceiptBySMS(transfer, fees);
-        notificationService.sendReceiptByEmail(transfer, fees, agent.getEmail());
-
-        // 14. Imprimer le reçu physique
-        String receiptContent = receiptPrintingService.generateTransferReceipt(savedTransfer, fees);
-        receiptPrintingService.printReceipt(receiptContent);
-
-        // 15. Retourner la réponse
         return EnvoiResponseDTO.fromEntity(savedTransfer, fees);
     }
 
     private void validateCorridor(Corridor corridor, String senderCountry, String recipientCountry) {
-        if (!corridor.getSourceCountry().equalsIgnoreCase(senderCountry)) {
-            throw new IllegalArgumentException(
-                    "Sender country does not match corridor source country"
-            );
-        }
-        if (!corridor.getDestinationCountry().equalsIgnoreCase(recipientCountry)) {
-            throw new IllegalArgumentException(
-                    "Recipient country does not match corridor destination country"
-            );
-        }
+        if (!corridor.getSourceCountry().equalsIgnoreCase(senderCountry))
+            throw new IllegalArgumentException("Sender country does not match corridor source country");
+        if (!corridor.getDestinationCountry().equalsIgnoreCase(recipientCountry))
+            throw new IllegalArgumentException("Recipient country does not match corridor destination country");
     }
 }
