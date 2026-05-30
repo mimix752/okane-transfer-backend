@@ -115,7 +115,7 @@ public class ReportServiceImpl implements ReportService {
         Map<String, BigDecimal> byCurrency = new HashMap<>();
         for (Transfer t : transfers) {
             if (t.getCurrency() != null) {
-                String key = t.getCurrency().name();
+                String key = t.getCurrency().getName();
                 byCurrency.put(key,
                         byCurrency.getOrDefault(key, BigDecimal.ZERO)
                                 .add(t.getAmount()));
@@ -171,7 +171,7 @@ public class ReportServiceImpl implements ReportService {
 
             List<Transfer> ct = transfers.stream()
                     .filter(t -> t.getCurrency() != null
-                            && t.getCurrency().name()
+                            && t.getCurrency().getName()
                             .equals(currencyCode))
                     .collect(Collectors.toList());
 
@@ -179,7 +179,7 @@ public class ReportServiceImpl implements ReportService {
             if (!ct.isEmpty()
                     && ct.get(0).getTargetCurrency() != null) {
                 targetCurrencyName =
-                        ct.get(0).getTargetCurrency().name();
+                        ct.get(0).getTargetCurrency().getName();
             }
 
             BigDecimal corridorFees = ct.stream()

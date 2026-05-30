@@ -1,5 +1,6 @@
 package com.okanetransfer.controller;
 
+import com.okanetransfer.entity.Currency;
 import com.okanetransfer.entity.CurrencyRate;
 import com.okanetransfer.service.CurrencyConversionService;
 import com.okanetransfer.repository.CurrencyRateRepository;
@@ -37,8 +38,8 @@ public class CurrencyManagementController {
     @Operation(summary = "Convert amount between currencies")
     public ResponseEntity<ApiResponse<BigDecimal>> convertCurrency(
             @Parameter(description = "Amount to convert") @RequestParam BigDecimal amount,
-            @Parameter(description = "Source currency code") @RequestParam String from,
-            @Parameter(description = "Target currency code") @RequestParam String to) {
+            @Parameter(description = "Source currency code") @RequestParam Currency from,
+            @Parameter(description = "Target currency code") @RequestParam Currency to) {
         
         BigDecimal convertedAmount = currencyConversionService.convertAmount(amount, from, to);
         return ResponseEntity.ok(ApiResponse.success("Conversion effectuée avec succès", convertedAmount));
@@ -47,8 +48,8 @@ public class CurrencyManagementController {
     @GetMapping("/rate")
     @Operation(summary = "Get exchange rate between two currencies")
     public ResponseEntity<ApiResponse<BigDecimal>> getExchangeRate(
-            @Parameter(description = "Source currency code") @RequestParam String from,
-            @Parameter(description = "Target currency code") @RequestParam String to) {
+            @Parameter(description = "Source currency code") @RequestParam Currency from,
+            @Parameter(description = "Target currency code") @RequestParam Currency to) {
         
         BigDecimal rate = currencyConversionService.getExchangeRate(from, to);
         return ResponseEntity.ok(ApiResponse.success("Taux de change récupéré avec succès", rate));
@@ -58,8 +59,8 @@ public class CurrencyManagementController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update exchange rate")
     public ResponseEntity<ApiResponse<CurrencyRate>> updateExchangeRate(
-            @Parameter(description = "Source currency code") @RequestParam String from,
-            @Parameter(description = "Target currency code") @RequestParam String to,
+            @Parameter(description = "Source currency code") @RequestParam Currency from,
+            @Parameter(description = "Target currency code") @RequestParam Currency to,
             @Parameter(description = "Exchange rate") @RequestParam BigDecimal rate) {
         
         CurrencyRate newRate = currencyConversionService.updateExchangeRate(from, to, rate);

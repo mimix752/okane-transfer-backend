@@ -1,5 +1,6 @@
 package com.okanetransfer.entity;
 
+import com.okanetransfer.enums.RateSource;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
@@ -14,13 +15,13 @@ public class CurrencyRate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Column(name = "from_currency", nullable = false, length = 3)
-    private String fromCurrency;
+   @ManyToOne
+    @JoinColumn(name = "from_currency", nullable = false)
+    private Currency fromCurrency;
 
-    @NotBlank
-    @Column(name = "to_currency", nullable = false, length = 3)
-    private String toCurrency;
+    @ManyToOne
+    @JoinColumn(name = "to_currency", nullable = false)
+    private Currency toCurrency;
 
     @NotNull
     @Positive
@@ -31,7 +32,7 @@ public class CurrencyRate {
     private boolean active = true;
 
     @Column(name = "source", length = 50)
-    private String source;
+    private RateSource source;
 
     @NotNull
     @Column(name = "applied_at", nullable = false)
@@ -50,8 +51,8 @@ public class CurrencyRate {
 
     public CurrencyRate() {}
 
-    public CurrencyRate(Long id, String fromCurrency, String toCurrency, BigDecimal rate,
-                        boolean active, String source, LocalDateTime appliedAt,
+    public CurrencyRate(Long id, Currency fromCurrency, Currency toCurrency, BigDecimal rate,
+                        boolean active, RateSource source, LocalDateTime appliedAt,
                         LocalDateTime createdAt) {
         this.id = id;
         this.fromCurrency = fromCurrency;
@@ -67,20 +68,20 @@ public class CurrencyRate {
 
     public static class Builder {
         private Long id;
-        private String fromCurrency;
-        private String toCurrency;
+        private Currency fromCurrency;
+        private Currency toCurrency;
         private BigDecimal rate;
         private boolean active = true;
-        private String source;
+        private RateSource source;
         private LocalDateTime appliedAt;
         private LocalDateTime createdAt;
 
         public Builder id(Long id) { this.id = id; return this; }
-        public Builder fromCurrency(String fromCurrency) { this.fromCurrency = fromCurrency; return this; }
-        public Builder toCurrency(String toCurrency) { this.toCurrency = toCurrency; return this; }
+        public Builder fromCurrency(Currency fromCurrency) { this.fromCurrency = fromCurrency; return this; }
+        public Builder toCurrency(Currency toCurrency) { this.toCurrency = toCurrency; return this; }
         public Builder rate(BigDecimal rate) { this.rate = rate; return this; }
         public Builder active(boolean active) { this.active = active; return this; }
-        public Builder source(String source) { this.source = source; return this; }
+        public Builder source(RateSource source) { this.source = source; return this; }
         public Builder appliedAt(LocalDateTime appliedAt) { this.appliedAt = appliedAt; return this; }
         public Builder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 
@@ -101,11 +102,11 @@ public class CurrencyRate {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getFromCurrency() { return fromCurrency; }
-    public void setFromCurrency(String fromCurrency) { this.fromCurrency = fromCurrency; }
+    public Currency getFromCurrency() { return fromCurrency; }
+    public void setFromCurrency(Currency fromCurrency) { this.fromCurrency = fromCurrency; }
 
-    public String getToCurrency() { return toCurrency; }
-    public void setToCurrency(String toCurrency) { this.toCurrency = toCurrency; }
+    public Currency getToCurrency() { return toCurrency; }
+    public void setToCurrency(Currency toCurrency) { this.toCurrency = toCurrency; }
 
     public BigDecimal getRate() { return rate; }
     public void setRate(BigDecimal rate) { this.rate = rate; }
@@ -113,8 +114,8 @@ public class CurrencyRate {
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
 
-    public String getSource() { return source; }
-    public void setSource(String source) { this.source = source; }
+    public RateSource getSource() { return source; }
+    public void setSource(RateSource source) { this.source = source; }
 
     public LocalDateTime getAppliedAt() { return appliedAt; }
     public void setAppliedAt(LocalDateTime appliedAt) { this.appliedAt = appliedAt; }

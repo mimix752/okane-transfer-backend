@@ -1,5 +1,6 @@
 package com.okanetransfer.service;
 
+import com.okanetransfer.entity.Currency;
 import com.okanetransfer.entity.CurrencyRate;
 import com.okanetransfer.repository.CurrencyRateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,7 @@ public class CurrencyConversionService {
     private CurrencyRateRepository currencyRateRepository;
 
     @Transactional(readOnly = true)
-    public BigDecimal convertAmount(BigDecimal amount, String fromCurrency, String toCurrency) {
+    public BigDecimal convertAmount(BigDecimal amount, Currency fromCurrency, Currency toCurrency) {
         if (fromCurrency.equals(toCurrency)) {
             return amount;
         }
@@ -28,7 +29,7 @@ public class CurrencyConversionService {
     }
 
     @Transactional(readOnly = true)
-    public BigDecimal getExchangeRate(String fromCurrency, String toCurrency) {
+    public BigDecimal getExchangeRate(Currency fromCurrency, Currency toCurrency) {
         Optional<CurrencyRate> rateOpt = currencyRateRepository
             .findByFromCurrencyAndToCurrencyAndActiveTrueOrderByCreatedAtDesc(fromCurrency, toCurrency);
         
@@ -48,7 +49,7 @@ public class CurrencyConversionService {
     }
 
     @Transactional
-    public CurrencyRate updateExchangeRate(String fromCurrency, String toCurrency, BigDecimal rate) {
+    public CurrencyRate updateExchangeRate(Currency fromCurrency, Currency toCurrency, BigDecimal rate) {
         // Désactiver l'ancien taux
         currencyRateRepository.findByFromCurrencyAndToCurrencyAndActiveTrueOrderByCreatedAtDesc(fromCurrency, toCurrency)
             .ifPresent(oldRate -> {
@@ -68,7 +69,7 @@ public class CurrencyConversionService {
     }
 
     @Transactional(readOnly = true)
-    public BigDecimal calculateConversionWithFees(BigDecimal amount, String fromCurrency, String toCurrency, 
+    public BigDecimal calculateConversionWithFees(BigDecimal amount, Currency fromCurrency, Currency toCurrency,
                                                 BigDecimal conversionFeePercent) {
         BigDecimal convertedAmount = convertAmount(amount, fromCurrency, toCurrency);
         BigDecimal conversionFee = convertedAmount.multiply(conversionFeePercent.divide(BigDecimal.valueOf(100)));

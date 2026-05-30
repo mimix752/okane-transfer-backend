@@ -2,11 +2,7 @@ package com.okanetransfer.service.envoi;
 
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
-import com.okanetransfer.entity.Agent;
-import com.okanetransfer.entity.Corridor;
-import com.okanetransfer.entity.Transfer;
-import com.okanetransfer.entity.User;
-import com.okanetransfer.enums.Currency;
+import com.okanetransfer.entity.*;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.AgentRepository;
@@ -93,11 +89,12 @@ public class EnvoiService {
         BigDecimal fees = feeGridService.calculateFee(dto.getCorridorId(), dto.getAmount());
         BigDecimal totalAmount = dto.getAmount().add(fees);
 
-        String targetCurrency = corridor.getDestinationCurrency().getCode();
+        // 7. Conversion de devise si nécessaire
+        Currency targetCurrency = corridor.getDestinationCurrency();
         BigDecimal convertedAmount = dto.getAmount();
-        if (!dto.getCurrency().equals(targetCurrency)) {
+        if (dto.getCurrency() != null && !dto.getCurrency().getCode().equals(targetCurrency.getCode())) {
             convertedAmount = currencyConversionService.convertAmount(
-                    dto.getAmount(), dto.getCurrency(), targetCurrency);
+                    dto.getAmount(), dto.getCurrency().getCode(), targetCurrency.getCode());
         }
 
         // 8. Vérifier le solde de l'agence
@@ -114,10 +111,10 @@ public class EnvoiService {
         transfer.setRecipientCountry(dto.getRecipientCountry());
         transfer.setSenderCountry(dto.getSenderCountry());
         transfer.setAmount(dto.getAmount());
-        transfer.setCurrency(Currency.valueOf(dto.getCurrency()));
+        transfer.setCurrency(dto.getCurrency());
         transfer.setFees(fees);
         transfer.setConvertedAmount(convertedAmount);
-        transfer.setTargetCurrency(Currency.valueOf(targetCurrency));
+        transfer.setTargetCurrency(targetCurrency);
         transfer.setStatus(TransferStatus.PENDING);
         transfer.setAgency(agent.getAgency());
         transfer.setCreatedAt(LocalDateTime.now());
@@ -125,7 +122,7 @@ public class EnvoiService {
         Transfer savedTransfer = transferRepository.save(transfer);
 
         try { cashRegisterService.crediter(agentId, totalAmount.negate(), "ENVOI", transferCode); } catch (Exception ignored) {}
-        try { agentAuditService.logTransferCreation(savedTransfer.getId(), savedTransfer.getTransferCode(), savedTransfer.getRecipientName(), dto.getAmount().toString(), dto.getCurrency()); } catch (Exception ignored) {}
+        try { agentAuditService.logTransferCreation(savedTransfer.getId(), savedTransfer.getTransferCode(), savedTransfer.getRecipientName(), dto.getAmount().toString(), dto.getCurrency() != null ? dto.getCurrency().getCode() : ""); } catch (Exception ignored) {}
         try { notificationService.sendReceiptBySMS(transfer, fees); } catch (Exception ignored) {}
         try { notificationService.sendReceiptByEmail(transfer, fees, agent.getEmail()); } catch (Exception ignored) {}
         try {

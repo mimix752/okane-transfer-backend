@@ -1,13 +1,8 @@
 package com.okanetransfer.dto.request;
 
+import com.okanetransfer.entity.Currency;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
-
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
 
 public class EnvoiRequestDTO {
 
@@ -52,8 +47,7 @@ public class EnvoiRequestDTO {
     @DecimalMax(value = "999999.99", message = "Amount exceeds maximum limit")
     private BigDecimal amount;
 
-    @NotBlank(message = "Currency is required")
-    private String currency;
+    private Currency currency;
 
     // ─── Corridor ───
     @NotNull(message = "Corridor ID is required")
@@ -63,7 +57,7 @@ public class EnvoiRequestDTO {
     public EnvoiRequestDTO() {
     }
 
-    public EnvoiRequestDTO(String senderName, String senderFirstName, String senderCIN, String senderPhone, String senderCountry, String recipientName, String recipientFirstName, String recipientPhone, String recipientCountry, BigDecimal amount, String currency, Long corridorId) {
+    public EnvoiRequestDTO(String senderName, String senderFirstName, String senderCIN, String senderPhone, String senderCountry, String recipientName, String recipientFirstName, String recipientPhone, String recipientCountry, BigDecimal amount, Currency currency, Long corridorId) {
         this.senderName = senderName;
         this.senderFirstName = senderFirstName;
         this.senderCIN = senderCIN;
@@ -166,11 +160,11 @@ public class EnvoiRequestDTO {
         this.amount = amount;
     }
 
-    public String getCurrency() {
+    public Currency getCurrency() {
         return currency;
     }
 
-    public void setCurrency(String currency) {
+    public void setCurrency(Currency currency) {
         this.currency = currency;
     }
 

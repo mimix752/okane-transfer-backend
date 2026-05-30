@@ -1,6 +1,6 @@
 package com.okanetransfer.entity;
 
-import com.okanetransfer.enums.Currency;
+import com.okanetransfer.entity.Currency;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.security.CryptoConverter;
 
@@ -51,14 +51,15 @@ public class Transfer {
     @Column(precision = 18, scale = 2)
     private BigDecimal fees = BigDecimal.ZERO;
 
-    @Enumerated(EnumType.STRING)
+    @ManyToOne
+    @JoinColumn(name = "currency_id")
     private Currency currency;
 
     @Column(name = "converted_amount", precision = 18, scale = 2)
     private BigDecimal convertedAmount;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "target_currency")
+    @ManyToOne
+    @JoinColumn(name = "target_currency")
     private Currency targetCurrency;
 
     @Enumerated(EnumType.STRING)
