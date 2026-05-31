@@ -1,17 +1,11 @@
 package com.okanetransfer.service.impl;
 
 import com.okanetransfer.dto.response.AlertResponseDTO;
-import com.okanetransfer.entity.Agency;
-import com.okanetransfer.entity.Alert;
+import com.okanetransfer.entity.*;
 import com.okanetransfer.entity.Currency;
-import com.okanetransfer.entity.Transfer;
-import com.okanetransfer.enums.AlertLevel;
-import com.okanetransfer.enums.AlertType;
-import com.okanetransfer.enums.RateSource;
+import com.okanetransfer.enums.*;
 import com.okanetransfer.exception.ResourceNotFoundException;
-import com.okanetransfer.repository.AgencyRepository;
-import com.okanetransfer.repository.AlertRepository;
-import com.okanetransfer.repository.TransferRepository;
+import com.okanetransfer.repository.*;
 import com.okanetransfer.service.AlertService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,28 +19,30 @@ import java.util.stream.Collectors;
 @Service
 public class AlertServiceImpl implements AlertService {
 
-    // Seuils configurables (idéalement dans application.properties)
-    private static final BigDecimal VOLUME_THRESHOLD_1H =
-            BigDecimal.valueOf(500_000); // 500k MAD en 1h = CRITIQUE
-    private static final BigDecimal BALANCE_LOW_THRESHOLD =
-            BigDecimal.valueOf(50_000);  // < 50k MAD = INFO
+    // Valeurs par défaut si aucun seuil en base
+    private static final BigDecimal DEFAULT_VOLUME_THRESHOLD =
+            BigDecimal.valueOf(500_000);
+    private static final BigDecimal DEFAULT_BALANCE_THRESHOLD =
+            BigDecimal.valueOf(50_000);
+    private static final BigDecimal DEFAULT_RATE_THRESHOLD =
+            BigDecimal.valueOf(5.0);
+    private static final int DEFAULT_DEDUP_MINUTES = 30;
 
-    // Fenêtre anti-doublon : pas deux alertes identiques en 30 min
-    private static final int DEDUP_MINUTES = 30;
-
-    private final AlertRepository    alertRepository;
-    private final AgencyRepository   agencyRepository;
-    private final TransferRepository transferRepository;
+    private final AlertRepository          alertRepository;
+    private final AlertThresholdRepository thresholdRepository;
+    private final AgencyRepository         agencyRepository;
+    private final TransferRepository       transferRepository;
 
     public AlertServiceImpl(
             AlertRepository alertRepository,
+            AlertThresholdRepository thresholdRepository,
             AgencyRepository agencyRepository,
             TransferRepository transferRepository) {
-        this.alertRepository    = alertRepository;
-        this.agencyRepository   = agencyRepository;
-        this.transferRepository = transferRepository;
+        this.alertRepository     = alertRepository;
+        this.thresholdRepository = thresholdRepository;
+        this.agencyRepository    = agencyRepository;
+        this.transferRepository  = transferRepository;
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -86,15 +82,16 @@ public class AlertServiceImpl implements AlertService {
         result.put("ATTENTION", 0L);
         result.put("INFO", 0L);
 
-        List<Object[]> counts = alertRepository.countUnreadByLevel();
+        List<Object[]> counts =
+                alertRepository.countUnreadByLevel();
         for (Object[] row : counts) {
-            String level = ((AlertLevel) row[0]).name();
+            String key   = ((AlertLevel) row[0]).name();
             Long   count = (Long) row[1];
-            result.put(level, count);
+            result.put(key, count);
         }
-        result.put("TOTAL",
-                result.values().stream()
-                        .reduce(0L, Long::sum));
+        long total = result.values().stream()
+                .reduce(0L, Long::sum);
+        result.put("TOTAL", total);
         return result;
     }
 
@@ -114,65 +111,64 @@ public class AlertServiceImpl implements AlertService {
     public void markAllAsRead() {
         List<Alert> unread = alertRepository
                 .findByIsReadFalseOrderByCreatedAtDesc();
-        for (Alert a : unread) {
-            a.setRead(true);
-        }
+        for (Alert a : unread) a.setRead(true);
         alertRepository.saveAll(unread);
     }
+
 
     @Override
     @Transactional
     public void checkVolumeAnomalies() {
 
+        // Lire le seuil depuis la base (ou défaut)
+        BigDecimal threshold = getThreshold(
+                AlertType.VOLUME_INHABITUEL,
+                DEFAULT_VOLUME_THRESHOLD);
+
+        int dedupMin = getDedupMinutes(
+                AlertType.VOLUME_INHABITUEL);
+
+        // Vérifier si ce type d'alerte est activé
+        if (!isAlertEnabled(AlertType.VOLUME_INHABITUEL)) return;
+
         LocalDateTime oneHourAgo =
                 LocalDateTime.now().minusHours(1);
 
-        List<Agency> agencies =
-                agencyRepository.findByActive(true);
+        for (Agency agency : agencyRepository.findByActive(true)) {
 
-        for (Agency agency : agencies) {
-
-            // Somme des montants des transferts de cette agence
-            // dans la dernière heure
-            List<Transfer> recentTransfers =
+            BigDecimal hourlyVolume =
                     transferRepository.findByCreatedAtBetween(
-                                    oneHourAgo, LocalDateTime.now())
-                            .stream()
-                            .filter(t -> t.getAgency() != null
-                                    && t.getAgency().getId()
-                                    .equals(agency.getId()))
-                            .collect(Collectors.toList());
-
-            BigDecimal hourlyVolume = recentTransfers.stream()
+                            oneHourAgo, LocalDateTime.now())
+                    .stream()
+                    .filter(t -> t.getAgency() != null
+                            && agency.getId().equals(
+                                    t.getAgency().getId()))
                     .map(Transfer::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            if (hourlyVolume.compareTo(
-                    VOLUME_THRESHOLD_1H) > 0) {
+            if (hourlyVolume.compareTo(threshold) > 0) {
 
-                // Vérifier anti-doublon (30 min)
-                boolean alreadyAlerted = alertRepository
-                        .existsRecentAlert(
-                                AlertType.VOLUME_INHABITUEL,
-                                agency.getId(),
-                                "AGENCY",
-                                LocalDateTime.now()
-                                        .minusMinutes(DEDUP_MINUTES)
-                        );
+                boolean alreadyAlerted =
+                        alertRepository.existsRecentAlert(
+                            AlertType.VOLUME_INHABITUEL,
+                            agency.getId(),
+                            "AGENCY",
+                            LocalDateTime.now()
+                                .minusMinutes(dedupMin));
 
                 if (!alreadyAlerted) {
                     createAlert(
-                            AlertLevel.CRITIQUE,
-                            AlertType.VOLUME_INHABITUEL,
-                            "Dépassement du seuil de "
-                                    + VOLUME_THRESHOLD_1H.toPlainString()
-                                    + " MAD en 1h par l'agence "
-                                    + agency.getName()
-                                    + " (volume: "
-                                    + hourlyVolume.toPlainString() + " MAD)",
-                            agency.getName(),
-                            "AGENCY",
-                            agency.getId()
+                        AlertLevel.CRITIQUE,
+                        AlertType.VOLUME_INHABITUEL,
+                        "Dépassement du seuil de "
+                        + threshold.toPlainString()
+                        + " MAD en 1h par l'agence "
+                        + agency.getName()
+                        + " (volume: "
+                        + hourlyVolume.toPlainString() + " MAD)",
+                        agency.getName(),
+                        "AGENCY",
+                        agency.getId()
                     );
                 }
             }
@@ -183,37 +179,42 @@ public class AlertServiceImpl implements AlertService {
     @Transactional
     public void checkLowBalances() {
 
-        List<Agency> agencies =
-                agencyRepository.findByActive(true);
+        BigDecimal threshold = getThreshold(
+                AlertType.SOLDE_AGENCE_BAS,
+                DEFAULT_BALANCE_THRESHOLD);
 
-        for (Agency agency : agencies) {
+        int dedupMin = getDedupMinutes(
+                AlertType.SOLDE_AGENCE_BAS);
+
+        if (!isAlertEnabled(AlertType.SOLDE_AGENCE_BAS)) return;
+
+        for (Agency agency : agencyRepository.findByActive(true)) {
 
             if (agency.getCurrentBalance() == null) continue;
 
-            if (agency.getCurrentBalance().compareTo(
-                    BALANCE_LOW_THRESHOLD) < 0) {
+            if (agency.getCurrentBalance()
+                      .compareTo(threshold) < 0) {
 
-                boolean alreadyAlerted = alertRepository
-                        .existsRecentAlert(
-                                AlertType.SOLDE_AGENCE_BAS,
-                                agency.getId(),
-                                "AGENCY",
-                                LocalDateTime.now()
-                                        .minusMinutes(DEDUP_MINUTES)
-                        );
+                boolean alreadyAlerted =
+                        alertRepository.existsRecentAlert(
+                            AlertType.SOLDE_AGENCE_BAS,
+                            agency.getId(),
+                            "AGENCY",
+                            LocalDateTime.now()
+                                .minusMinutes(dedupMin));
 
                 if (!alreadyAlerted) {
                     createAlert(
-                            AlertLevel.INFO,
-                            AlertType.SOLDE_AGENCE_BAS,
-                            "Pré-approvisionnement inférieur à "
-                                    + BALANCE_LOW_THRESHOLD.toPlainString()
-                                    + " MAD. Solde actuel: "
-                                    + agency.getCurrentBalance().toPlainString()
-                                    + " MAD",
-                            agency.getName(),
-                            "AGENCY",
-                            agency.getId()
+                        AlertLevel.INFO,
+                        AlertType.SOLDE_AGENCE_BAS,
+                        "Pré-approvisionnement inférieur à "
+                        + threshold.toPlainString()
+                        + " MAD. Solde actuel: "
+                        + agency.getCurrentBalance()
+                                .toPlainString() + " MAD",
+                        agency.getName(),
+                        "AGENCY",
+                        agency.getId()
                     );
                 }
             }
@@ -224,26 +225,25 @@ public class AlertServiceImpl implements AlertService {
     @Transactional
     public void createApiFailureAlert(String currencyCode) {
 
-        // Compter les échecs récents dans les 30 dernières minutes
-        boolean alreadyAlerted = alertRepository
-                .existsRecentAlert(
-                        AlertType.ECHEC_API_PARTENAIRE,
-                        -1L, // pas d'entité spécifique
-                        "GATEWAY",
-                        LocalDateTime.now()
-                                .minusMinutes(DEDUP_MINUTES)
-                );
+        int dedupMin = getDedupMinutes(
+                AlertType.ECHEC_API_PARTENAIRE);
+
+        if (!isAlertEnabled(AlertType.ECHEC_API_PARTENAIRE))
+            return;
+
+        boolean alreadyAlerted = alertRepository.existsRecentAlert(
+                AlertType.ECHEC_API_PARTENAIRE,
+                -1L, "GATEWAY",
+                LocalDateTime.now().minusMinutes(dedupMin));
 
         if (!alreadyAlerted) {
             createAlert(
-                    AlertLevel.ATTENTION,
-                    AlertType.ECHEC_API_PARTENAIRE,
-                    "Échec de récupération du taux pour "
-                            + currencyCode
-                            + " via l'API externe.",
-                    "Gateway-API-" + currencyCode,
-                    "GATEWAY",
-                    null
+                AlertLevel.ATTENTION,
+                AlertType.ECHEC_API_PARTENAIRE,
+                "Échec de récupération du taux pour "
+                + currencyCode + " via l'API externe.",
+                "Gateway-API-" + currencyCode,
+                "GATEWAY", null
             );
         }
     }
@@ -257,30 +257,61 @@ public class AlertServiceImpl implements AlertService {
             BigDecimal variationPercent,
             RateSource source) {
 
-        String sign = variationPercent.compareTo(BigDecimal.ZERO) > 0
-                ? "+" : "";
+        BigDecimal threshold = getThreshold(
+                AlertType.TAUX_CHANGE_ANOMALIE,
+                DEFAULT_RATE_THRESHOLD);
+
+        // Ne créer l'alerte que si la variation dépasse le seuil
+        if (variationPercent.abs().compareTo(threshold) < 0)
+            return;
+
+        if (!isAlertEnabled(AlertType.TAUX_CHANGE_ANOMALIE))
+            return;
+
+        String sign = newRate.compareTo(oldRate) > 0 ? "+" : "";
 
         createAlert(
-                AlertLevel.CRITIQUE,
-                AlertType.TAUX_CHANGE_ANOMALIE,
-                "Variation anormale du taux "
-                        + currency.getCode() + "/MAD : "
-                        + oldRate + " → " + newRate
-                        + " (" + sign + variationPercent + "%). "
-                        + "Source: " + source.name(),
-                currency.getCode() + "/MAD",
-                "CURRENCY",
-                currency.getId()
+            AlertLevel.CRITIQUE,
+            AlertType.TAUX_CHANGE_ANOMALIE,
+            "Variation anormale du taux "
+            + currency.getCode() + "/MAD : "
+            + oldRate + " → " + newRate
+            + " (" + sign + variationPercent + "%). "
+            + "Source: " + source.name(),
+            currency.getCode() + "/MAD",
+            "CURRENCY",
+            currency.getId()
         );
     }
 
+    private BigDecimal getThreshold(AlertType type,
+                                     BigDecimal defaultValue) {
+        return thresholdRepository
+                .findByAlertType(type)
+                .map(AlertThreshold::getThresholdValue)
+                .orElse(defaultValue);
+    }
+
+    private int getDedupMinutes(AlertType type) {
+        return thresholdRepository
+                .findByAlertType(type)
+                .map(AlertThreshold::getDedupMinutes)
+                .orElse(DEFAULT_DEDUP_MINUTES);
+    }
+
+    private boolean isAlertEnabled(AlertType type) {
+        return thresholdRepository
+                .findByAlertType(type)
+                .map(AlertThreshold::isEnabled)
+                .orElse(true); // activé par défaut
+    }
 
     private void createAlert(AlertLevel level,
-                             AlertType type,
-                             String description,
-                             String entityName,
-                             String entityType,
-                             Long entityId) {
+                               AlertType type,
+                               String description,
+                               String entityName,
+                               String entityType,
+                               Long entityId) {
         Alert alert = Alert.builder()
                 .level(level)
                 .type(type)
