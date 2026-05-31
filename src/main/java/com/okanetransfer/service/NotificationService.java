@@ -59,6 +59,17 @@ public class NotificationService {
         // TODO: Intégrer API Email
         System.out.println("NOTIFICATION EMAIL [" + email + "]: " + message);
     }
+    public void sendMobileMoneyNotification(String mobileAccount, String operator, java.math.BigDecimal amount, String transferCode) {
+        String safeAccount = mobileAccount != null ? mobileAccount.replaceAll("[\\r\\n]", "") : "";
+        String safeCode = transferCode != null ? transferCode.replaceAll("[\\r\\n]", "") : "";
+        String safeOperator = operator != null ? operator.replaceAll("[\\r\\n]", "") : "";
+        String message = String.format(
+                "[%s] Vous avez recu %.2f sur votre compte. Code: %s - Okane Transfer",
+                safeOperator, amount, safeCode
+        );
+        System.out.println("SMS MOBILE MONEY [" + safeAccount + "]: " + message);
+    }
+
     public void sendStatusChangeNotification(String email, String username, String transferCode, String newStatus) {
         String message = String.format(
                 "Bonjour %s,\n\nLe statut de votre transfert %s a changé : %s\n\nCordialement,\nOkane Transfer",

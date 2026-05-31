@@ -3,6 +3,7 @@ package com.okanetransfer.service.impl;
 import com.okanetransfer.dto.request.CorridorRequestDTO;
 import com.okanetransfer.dto.response.CorridorResponseDTO;
 import com.okanetransfer.dto.response.CorridorStatsResponseDTO;
+import com.okanetransfer.dto.response.CurrencyResponseDTO;
 import com.okanetransfer.entity.Corridor;
 import com.okanetransfer.entity.Currency;
 import com.okanetransfer.entity.FeeGrid;
@@ -218,6 +219,14 @@ public class CorridorServiceImpl implements CorridorService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Currency not found with id: " + id));
     }
+    @Override
+    @Transactional(readOnly = true)
+    public List<CurrencyResponseDTO> getActiveCurrencies() {
+        return currencyRepository.findByActive(true).stream()
+                .map(CurrencyResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     @Override
     @Transactional(readOnly = true)
     public CorridorStatsResponseDTO getStats(Long corridorId) {

@@ -1,6 +1,5 @@
 package com.okanetransfer.repository;
 
-import com.okanetransfer.entity.Currency;
 import com.okanetransfer.entity.CurrencyRate;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,11 +13,11 @@ import java.util.Optional;
 @Repository
 public interface CurrencyRateRepository extends JpaRepository<CurrencyRate, Long> {
 
-    Optional<CurrencyRate> findByFromCurrencyAndToCurrencyAndActiveTrueOrderByCreatedAtDesc(
-            Currency fromCurrency, Currency toCurrency);
+    Optional<CurrencyRate> findByFromCurrencyAndToCurrencyAndActiveTrueOrderByAppliedAtDesc(
+            String fromCurrency, String toCurrency);
 
-    List<CurrencyRate> findByFromCurrencyAndToCurrencyOrderByCreatedAtDesc(
-        Currency fromCurrency, Currency toCurrency);
+    List<CurrencyRate> findByFromCurrencyAndToCurrencyOrderByAppliedAtDesc(
+            String fromCurrency, String toCurrency);
 
     @Query("""
         SELECT r FROM CurrencyRate r
@@ -36,10 +35,6 @@ public interface CurrencyRateRepository extends JpaRepository<CurrencyRate, Long
 
     List<CurrencyRate> findByActiveTrue();
 
-    @Query("""
-        SELECT DISTINCT r.fromCurrency FROM CurrencyRate r WHERE r.active = true
-        UNION
-        SELECT DISTINCT r.toCurrency FROM CurrencyRate r WHERE r.active = true
-    """)
+    @Query("SELECT DISTINCT r.fromCurrency FROM CurrencyRate r WHERE r.active = true")
     List<String> findAllActiveCurrencies();
 }

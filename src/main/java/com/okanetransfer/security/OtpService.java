@@ -24,7 +24,8 @@ public class OtpService {
         OtpCode otpCode = new OtpCode(username, code, expiresAt);
         otpCodeRepository.save(otpCode);
 
-        System.out.println("OTP SMS [" + username + "]: Votre code de vérification est " + code);
+        String safeUsername = username != null ? username.replaceAll("[\\r\\n]", "") : "";
+        System.out.println("OTP SMS [" + safeUsername + "]: Code de verification genere (non affiche pour securite)");
 
         return code;
     }

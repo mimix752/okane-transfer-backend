@@ -8,72 +8,71 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
- * Convertisseur JPA — chiffrement AES-256 automatique des CINs en base (CDC 4.3)
- * Chiffre avant INSERT/UPDATE, déchiffre après SELECT
+ * Convertisseur JPA — chiffrement AES-256-CBC automatique des CINs en base.
+ * IV aléatoire de 16 octets généré à chaque chiffrement, stocké en préfixe du ciphertext.
  */
 @Component
 @Converter
 public class CryptoConverter implements AttributeConverter<String, String> {
 
     private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
+    private static final int IV_LENGTH = 16;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    // Clé AES-256 : 32 caractères obligatoire (256 bits)
-    // À définir dans application.properties : crypto.aes.secret=votre_cle_32_chars
     private static String staticSecret;
 
     @Value("${crypto.aes.secret}")
     public void setSecret(String secret) {
-        if (secret.length() != 32) {
-            throw new IllegalArgumentException(
-                    "crypto.aes.secret doit faire exactement 32 caractères (AES-256)"
-            );
-        }
+        if (secret.length() != 32)
+            throw new IllegalArgumentException("crypto.aes.secret doit faire exactement 32 caractères (AES-256)");
         CryptoConverter.staticSecret = secret;
     }
-
-    // ─── Chiffrement (avant écriture en base) ───────────────────────────────────
 
     @Override
     public String convertToDatabaseColumn(String plainText) {
         if (plainText == null || plainText.isBlank()) return plainText;
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(staticSecret.getBytes(), "AES");
+            byte[] iv = new byte[IV_LENGTH];
+            SECURE_RANDOM.nextBytes(iv);
 
-            // IV fixe dérivé de la clé (16 premiers octets) — simple et reproductible
-            byte[] iv = staticSecret.substring(0, 16).getBytes();
-            IvParameterSpec ivSpec = new IvParameterSpec(iv);
-
+            SecretKeySpec keySpec = new SecretKeySpec(staticSecret.getBytes("UTF-8"), "AES");
             Cipher cipher = Cipher.getInstance(ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
 
             byte[] encrypted = cipher.doFinal(plainText.getBytes("UTF-8"));
-            return Base64.getEncoder().encodeToString(encrypted);
 
+            // Préfixer l'IV au ciphertext : IV(16) + ciphertext
+            byte[] combined = new byte[IV_LENGTH + encrypted.length];
+            System.arraycopy(iv, 0, combined, 0, IV_LENGTH);
+            System.arraycopy(encrypted, 0, combined, IV_LENGTH, encrypted.length);
+
+            return Base64.getEncoder().encodeToString(combined);
         } catch (Exception e) {
             throw new RuntimeException("Erreur chiffrement CIN", e);
         }
     }
 
-    // ─── Déchiffrement (après lecture depuis base) ───────────────────────────────
-
     @Override
     public String convertToEntityAttribute(String encryptedText) {
         if (encryptedText == null || encryptedText.isBlank()) return encryptedText;
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(staticSecret.getBytes(), "AES");
+            byte[] combined = Base64.getDecoder().decode(encryptedText);
 
-            byte[] iv = staticSecret.substring(0, 16).getBytes();
-            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            // Extraire IV (16 premiers octets) et ciphertext
+            byte[] iv = new byte[IV_LENGTH];
+            byte[] ciphertext = new byte[combined.length - IV_LENGTH];
+            System.arraycopy(combined, 0, iv, 0, IV_LENGTH);
+            System.arraycopy(combined, IV_LENGTH, ciphertext, 0, ciphertext.length);
 
+            SecretKeySpec keySpec = new SecretKeySpec(staticSecret.getBytes("UTF-8"), "AES");
             Cipher cipher = Cipher.getInstance(ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
 
-            byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(encryptedText));
-            return new String(decrypted, "UTF-8");
-
+            return new String(cipher.doFinal(ciphertext), "UTF-8");
         } catch (Exception e) {
             throw new RuntimeException("Erreur déchiffrement CIN", e);
         }

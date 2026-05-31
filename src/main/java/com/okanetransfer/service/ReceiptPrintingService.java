@@ -137,6 +137,8 @@ public class ReceiptPrintingService {
             case PAID -> "Payé";
             case CANCELLED -> "Annulé";
             case EXPIRED -> "Expiré";
+            case MOBILE_SENT -> "Envoyé Mobile Money";
+            case RECONCILED -> "Réconcilié";
         };
     }
 }

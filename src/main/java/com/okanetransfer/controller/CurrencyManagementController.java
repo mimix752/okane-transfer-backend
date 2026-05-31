@@ -38,9 +38,8 @@ public class CurrencyManagementController {
     @Operation(summary = "Convert amount between currencies")
     public ResponseEntity<ApiResponse<BigDecimal>> convertCurrency(
             @Parameter(description = "Amount to convert") @RequestParam BigDecimal amount,
-            @Parameter(description = "Source currency code") @RequestParam Currency from,
-            @Parameter(description = "Target currency code") @RequestParam Currency to) {
-        
+            @Parameter(description = "Source currency code. Ex: GNF") @RequestParam String from,
+            @Parameter(description = "Target currency code. Ex: EUR") @RequestParam String to) {
         BigDecimal convertedAmount = currencyConversionService.convertAmount(amount, from, to);
         return ResponseEntity.ok(ApiResponse.success("Conversion effectuée avec succès", convertedAmount));
     }
@@ -48,9 +47,8 @@ public class CurrencyManagementController {
     @GetMapping("/rate")
     @Operation(summary = "Get exchange rate between two currencies")
     public ResponseEntity<ApiResponse<BigDecimal>> getExchangeRate(
-            @Parameter(description = "Source currency code") @RequestParam Currency from,
-            @Parameter(description = "Target currency code") @RequestParam Currency to) {
-        
+            @Parameter(description = "Source currency code. Ex: GNF") @RequestParam String from,
+            @Parameter(description = "Target currency code. Ex: EUR") @RequestParam String to) {
         BigDecimal rate = currencyConversionService.getExchangeRate(from, to);
         return ResponseEntity.ok(ApiResponse.success("Taux de change récupéré avec succès", rate));
     }
@@ -59,11 +57,12 @@ public class CurrencyManagementController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update exchange rate")
     public ResponseEntity<ApiResponse<CurrencyRate>> updateExchangeRate(
-            @Parameter(description = "Source currency code") @RequestParam Currency from,
-            @Parameter(description = "Target currency code") @RequestParam Currency to,
+            @Parameter(description = "Source currency code. Ex: GNF") @RequestParam String from,
+            @Parameter(description = "Target currency code. Ex: EUR") @RequestParam String to,
             @Parameter(description = "Exchange rate") @RequestParam BigDecimal rate) {
-        
-        CurrencyRate newRate = currencyConversionService.updateExchangeRate(from, to, rate);
+        Currency fromCurrency = currencyConversionService.findByCode(from);
+        Currency toCurrency = currencyConversionService.findByCode(to);
+        CurrencyRate newRate = currencyConversionService.updateExchangeRate(fromCurrency, toCurrency, rate);
         return ResponseEntity.ok(ApiResponse.success("Taux de change mis à jour avec succès", newRate));
     }
 

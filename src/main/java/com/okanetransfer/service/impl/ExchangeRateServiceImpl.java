@@ -241,8 +241,8 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
         if (mad == null) return;
 
         CurrencyRate snapshot = CurrencyRate.builder()
-                .fromCurrency(fromCurrency)
-                .toCurrency(mad)
+                .fromCurrency(fromCurrency.getCode())
+                .toCurrency(mad.getCode())
                 .rate(rate)
                 .source(source)
                 .appliedAt(LocalDateTime.now())

@@ -81,6 +81,7 @@ public class SecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/api/currencies/**")).hasRole("ADMIN")
                         .requestMatchers(new AntPathRequestMatcher("/api/reports/**")).hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers(new AntPathRequestMatcher("/api/audit/agents/**")).hasRole("ADMIN")
+                        .requestMatchers(new AntPathRequestMatcher("/api/mobile-money/**")).hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers(new AntPathRequestMatcher("/api/kyc-aml/**")).hasAnyRole("ADMIN", "AGENT")
                         .anyRequest().authenticated()
                 )

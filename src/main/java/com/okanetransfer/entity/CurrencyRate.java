@@ -15,13 +15,17 @@ public class CurrencyRate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-   @ManyToOne
-    @JoinColumn(name = "from_currency", nullable = false)
-    private Currency fromCurrency;
+    @NotBlank
+    @Column(name = "pair", nullable = false, length = 20)
+    private String pair;
 
-    @ManyToOne
-    @JoinColumn(name = "to_currency", nullable = false)
-    private Currency toCurrency;
+    @NotBlank
+    @Column(name = "from_currency", nullable = false, length = 10)
+    private String fromCurrency;
+
+    @NotBlank
+    @Column(name = "to_currency", nullable = false, length = 10)
+    private String toCurrency;
 
     @NotNull
     @Positive
@@ -51,7 +55,7 @@ public class CurrencyRate {
 
     public CurrencyRate() {}
 
-    public CurrencyRate(Long id, Currency fromCurrency, Currency toCurrency, BigDecimal rate,
+    public CurrencyRate(Long id, String fromCurrency, String toCurrency, BigDecimal rate,
                         boolean active, RateSource source, LocalDateTime appliedAt,
                         LocalDateTime createdAt) {
         this.id = id;
@@ -68,8 +72,8 @@ public class CurrencyRate {
 
     public static class Builder {
         private Long id;
-        private Currency fromCurrency;
-        private Currency toCurrency;
+        private String fromCurrency;
+        private String toCurrency;
         private BigDecimal rate;
         private boolean active = true;
         private RateSource source;
@@ -77,8 +81,8 @@ public class CurrencyRate {
         private LocalDateTime createdAt;
 
         public Builder id(Long id) { this.id = id; return this; }
-        public Builder fromCurrency(Currency fromCurrency) { this.fromCurrency = fromCurrency; return this; }
-        public Builder toCurrency(Currency toCurrency) { this.toCurrency = toCurrency; return this; }
+        public Builder fromCurrency(String fromCurrency) { this.fromCurrency = fromCurrency; return this; }
+        public Builder toCurrency(String toCurrency) { this.toCurrency = toCurrency; return this; }
         public Builder rate(BigDecimal rate) { this.rate = rate; return this; }
         public Builder active(boolean active) { this.active = active; return this; }
         public Builder source(RateSource source) { this.source = source; return this; }
@@ -102,11 +106,14 @@ public class CurrencyRate {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Currency getFromCurrency() { return fromCurrency; }
-    public void setFromCurrency(Currency fromCurrency) { this.fromCurrency = fromCurrency; }
+    public String getPair() { return pair; }
+    public void setPair(String pair) { this.pair = pair; }
 
-    public Currency getToCurrency() { return toCurrency; }
-    public void setToCurrency(Currency toCurrency) { this.toCurrency = toCurrency; }
+    public String getFromCurrency() { return fromCurrency; }
+    public void setFromCurrency(String fromCurrency) { this.fromCurrency = fromCurrency; }
+
+    public String getToCurrency() { return toCurrency; }
+    public void setToCurrency(String toCurrency) { this.toCurrency = toCurrency; }
 
     public BigDecimal getRate() { return rate; }
     public void setRate(BigDecimal rate) { this.rate = rate; }
