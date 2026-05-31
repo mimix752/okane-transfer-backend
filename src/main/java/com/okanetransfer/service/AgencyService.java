@@ -24,6 +24,8 @@ public interface AgencyService {
     void removeAgent(Long agencyId, Long userId, String adminIp);
 
     AgencyPerformanceResponseDTO getPerformance(Long id);
+    
+    List<AgencyPerformanceResponseDTO> getAllPerformances();
 
     void checkAndDeductBalance(Long agencyId, BigDecimal amount);
 
