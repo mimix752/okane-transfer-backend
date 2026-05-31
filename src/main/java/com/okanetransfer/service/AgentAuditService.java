@@ -25,20 +25,20 @@ public class AgentAuditService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
-    public void logAgentAction(String actionType, String entityType, Long entityId, 
-                              String description, Object oldValues, Object newValues) {
-        
+    public void logAgentAction(String actionType, String entityType, Long entityId,
+                               String description, Object oldValues, Object newValues) {
+
         String currentUsername = SecurityUtils.getCurrentUsername();
-        
+
         if ("anonymous".equals(currentUsername)) return; // Pas d'utilisateur connecté
-        
+
         AgentAuditTrail audit = new AgentAuditTrail();
         audit.setAgentUsername(currentUsername);
         audit.setActionType(actionType);
         audit.setEntityType(entityType);
         audit.setEntityId(entityId);
         audit.setDescription(description);
-        
+
         // Capturer les informations de la requête HTTP
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes != null) {
@@ -50,7 +50,7 @@ public class AgentAuditService {
                 audit.setSessionId(session != null ? session.getId() : null);
             } catch (Exception ignored) {}
         }
-        
+
         // Sérialiser les valeurs en JSON
         if (oldValues != null) {
             audit.setOldValues(toJson(oldValues));
@@ -58,79 +58,79 @@ public class AgentAuditService {
         if (newValues != null) {
             audit.setNewValues(toJson(newValues));
         }
-        
+
         auditTrailRepository.save(audit);
     }
 
     @Transactional
     public void logTransferCreation(Long transferId, String transferCode, String recipientName,
-                                    String amount, Currency currency) {
+                                    String amount, String currency) { // ✅ FIXED: Changed from 'Currency currency' to 'String currency' to match the call in EnvoiService
         logAgentAction(
-            "CREATE_TRANSFER",
-            "Transfer",
-            transferId,
-            "Création d'un transfert: " + transferCode + " pour " + recipientName + 
-            " - Montant: " + amount + " " + currency,
-            null,
-            "transferCode=" + transferCode + ", recipient=" + recipientName + 
-            ", amount=" + amount + ", currency=" + currency
+                "CREATE_TRANSFER",
+                "Transfer",
+                transferId,
+                "Création d'un transfert: " + transferCode + " pour " + recipientName +
+                        " - Montant: " + amount + " " + currency,
+                null,
+                "transferCode=" + transferCode + ", recipient=" + recipientName +
+                        ", amount=" + amount + ", currency=" + currency
         );
     }
 
     @Transactional
     public void logTransferWithdrawal(Long transferId, String transferCode, String recipientPhone) {
         logAgentAction(
-            "WITHDRAW_TRANSFER",
-            "Transfer",
-            transferId,
-            "Retrait du transfert: " + transferCode + " par " + recipientPhone,
-            null,
-            "transferCode=" + transferCode + ", recipientPhone=" + recipientPhone
+                "WITHDRAW_TRANSFER",
+                "Transfer",
+                transferId,
+                "Retrait du transfert: " + transferCode + " par " + recipientPhone,
+                null,
+                "transferCode=" + transferCode + ", recipientPhone=" + recipientPhone
         );
     }
 
     @Transactional
     public void logLogin(String ipAddress, String userAgent) {
         String currentUsername = SecurityUtils.getCurrentUsername();
-        
+
         AgentAuditTrail audit = new AgentAuditTrail();
         audit.setAgentUsername(currentUsername);
         audit.setActionType("LOGIN");
         audit.setDescription("Connexion de l'agent");
         audit.setIpAddress(ipAddress);
         audit.setUserAgent(userAgent);
-        
+
         auditTrailRepository.save(audit);
     }
 
     @Transactional
     public void logLogout() {
         logAgentAction(
-            "LOGOUT",
-            null,
-            null,
-            "Déconnexion de l'agent",
-            null,
-            null
+                "LOGOUT",
+                null,
+                null,
+                "Déconnexion de l'agent",
+                null,
+                null
         );
     }
 
     @Transactional
     public void logCashOperation(String operationType, String amount, String description) {
         logAgentAction(
-            "CASH_" + operationType.toUpperCase(),
-            "CashRegister",
-            null,
-            description + " - Montant: " + amount,
-            null,
-            "amount=" + amount + ", operation=" + operationType
+                "CASH_" + operationType.toUpperCase(),
+                "CashRegister",
+                null,
+                description + " - Montant: " + amount,
+                null,
+                "amount=" + amount + ", operation=" + operationType
         );
     }
 
     @Transactional(readOnly = true)
     public List<AgentAuditTrail> getAgentAuditTrail(Long agentId, LocalDateTime from, LocalDateTime to) {
         String username = SecurityUtils.getCurrentUsername();
-        
+
         if (from != null && to != null) {
             return auditTrailRepository.findByAgentAndDateRange(username, from, to);
         } else {
@@ -154,12 +154,12 @@ public class AgentAuditService {
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
             return xForwardedFor.split(",")[0].trim();
         }
-        
+
         String xRealIp = request.getHeader("X-Real-IP");
         if (xRealIp != null && !xRealIp.isEmpty()) {
             return xRealIp;
         }
-        
+
         return request.getRemoteAddr();
     }
 
