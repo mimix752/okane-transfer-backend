@@ -2,11 +2,17 @@ package com.okanetransfer.service.envoi;
 
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
-import com.okanetransfer.entity.*;
+import com.okanetransfer.entity.Agent;
+import com.okanetransfer.entity.Agency;
+import com.okanetransfer.entity.Corridor;
+import com.okanetransfer.entity.Currency;
+import com.okanetransfer.entity.Transfer;
+import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.AgentRepository;
 import com.okanetransfer.repository.CorridorRepository;
+import com.okanetransfer.repository.CurrencyRepository;
 import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.AgencyService;
@@ -65,6 +71,9 @@ public class EnvoiService {
     @Autowired
     private CashRegisterService cashRegisterService;
 
+    @Autowired
+    private CurrencyRepository currencyRepository;
+
     @Transactional
     public EnvoiResponseDTO createTransfer(EnvoiRequestDTO dto, Long agentId) {
 
@@ -89,12 +98,16 @@ public class EnvoiService {
         BigDecimal fees = feeGridService.calculateFee(dto.getCorridorId(), dto.getAmount());
         BigDecimal totalAmount = dto.getAmount().add(fees);
 
+        // Récupérer l'entité Currency à partir du code
+        Currency currency = currencyRepository.findByCode(dto.getCurrency())
+                .orElseThrow(() -> new ResourceNotFoundException("Currency not found: " + dto.getCurrency()));
+
         // 7. Conversion de devise si nécessaire
         Currency targetCurrency = corridor.getDestinationCurrency();
         BigDecimal convertedAmount = dto.getAmount();
-        if (dto.getCurrency() != null && !dto.getCurrency().getCode().equals(targetCurrency.getCode())) {
+        if (!currency.getCode().equals(targetCurrency.getCode())) {
             convertedAmount = currencyConversionService.convertAmount(
-                    dto.getAmount(), dto.getCurrency().getCode(), targetCurrency.getCode());
+                    dto.getAmount(), currency, targetCurrency);
         }
 
         // 8. Vérifier le solde de l'agence
@@ -111,7 +124,7 @@ public class EnvoiService {
         transfer.setRecipientCountry(dto.getRecipientCountry());
         transfer.setSenderCountry(dto.getSenderCountry());
         transfer.setAmount(dto.getAmount());
-        transfer.setCurrency(dto.getCurrency());
+        transfer.setCurrency(currency);
         transfer.setFees(fees);
         transfer.setConvertedAmount(convertedAmount);
         transfer.setTargetCurrency(targetCurrency);
@@ -121,10 +134,27 @@ public class EnvoiService {
 
         Transfer savedTransfer = transferRepository.save(transfer);
 
-        try { cashRegisterService.crediter(agentId, totalAmount.negate(), "ENVOI", transferCode); } catch (Exception ignored) {}
-        try { agentAuditService.logTransferCreation(savedTransfer.getId(), savedTransfer.getTransferCode(), savedTransfer.getRecipientName(), dto.getAmount().toString(), dto.getCurrency() != null ? dto.getCurrency().getCode() : ""); } catch (Exception ignored) {}
-        try { notificationService.sendReceiptBySMS(transfer, fees); } catch (Exception ignored) {}
-        try { notificationService.sendReceiptByEmail(transfer, fees, agent.getEmail()); } catch (Exception ignored) {}
+        try {
+            cashRegisterService.crediter(agentId, totalAmount.negate(), "ENVOI", transferCode);
+        } catch (Exception ignored) {}
+
+        try {
+            agentAuditService.logTransferCreation(
+                    savedTransfer.getId(),
+                    savedTransfer.getTransferCode(),
+                    savedTransfer.getRecipientName(),
+                    dto.getAmount().toString(),
+                    currency.getCode()); // FIXED: Changed from 'currency' object to 'currency.getCode()' - logTransferCreation() expects a String, not a Currency entity
+        } catch (Exception ignored) {}
+
+        try {
+            notificationService.sendReceiptBySMS(transfer, fees);
+        } catch (Exception ignored) {}
+
+        try {
+            notificationService.sendReceiptByEmail(transfer, fees, agent.getEmail());
+        } catch (Exception ignored) {}
+
         try {
             String receipt = receiptPrintingService.generateTransferReceipt(savedTransfer, fees);
             receiptPrintingService.printReceipt(receipt);
