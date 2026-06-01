@@ -144,7 +144,7 @@ public class EnvoiResponseDTO {
         dto.setRecipientName(transfer.getRecipientName());
         dto.setRecipientCountry(transfer.getRecipientCountry());
         dto.setAmount(transfer.getAmount());
-        dto.setCurrency(transfer.getCurrency().toString());
+        dto.setCurrency(transfer.getCurrency().getCode()); // ✅ FIXED: Changed from .toString() to .getCode() - ensures we get the currency code (e.g., "USD", "EUR", "MAD") as a String, not the object's toString representation
         dto.setFees(fees);
         dto.setNetAmount(netAmount);
         dto.setStatus(transfer.getStatus().toString());
@@ -168,11 +168,11 @@ public class EnvoiResponseDTO {
                 transfer.getSender().getUsername(),
                 transfer.getRecipientName(),
                 transfer.getAmount(),
-                transfer.getCurrency(),
+                transfer.getCurrency().getCode(), // FIXED: Changed from transfer.getCurrency() to transfer.getCurrency().getCode() - ensures proper String formatting in the receipt
                 fees,
-                transfer.getCurrency(),
+                transfer.getCurrency().getCode(), // FIXED: Same change here
                 netAmount,
-                transfer.getCurrency(),
+                transfer.getCurrency().getCode(), // FIXED: Same change here
                 transfer.getCreatedAt(),
                 transfer.getStatus()
         );

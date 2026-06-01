@@ -715,13 +715,20 @@
                 return;
             }
 
-            // Credentials OK → étape OTP
-            pendingUsername = username;
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('otpPage').style.display = 'flex';
-            document.getElementById('otpCode').value = '';
-            document.getElementById('otpError').style.display = 'none';
-            setTimeout(() => document.getElementById('otpCode').focus(), 100);
+            if (data.data.requiresOtp === true) {
+                pendingUsername = username;
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('otpPage').style.display = 'flex';
+                document.getElementById('otpCode').value = '';
+                document.getElementById('otpError').style.display = 'none';
+                setTimeout(() => document.getElementById('otpCode').focus(), 100);
+            } else {
+                token = data.data.token;
+                localStorage.setItem('okane_client_token', token);
+                showDashboard(data.data.username);
+            }
+
+
 
         } catch (e) {
             errEl.textContent = 'Impossible de contacter le serveur.';

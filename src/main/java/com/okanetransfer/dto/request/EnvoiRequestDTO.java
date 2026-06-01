@@ -2,7 +2,6 @@ package com.okanetransfer.dto.request;
 
 import com.okanetransfer.entity.Currency;
 import jakarta.validation.constraints.*;
-
 import java.math.BigDecimal;
 
 public class EnvoiRequestDTO {
@@ -135,6 +134,14 @@ public class EnvoiRequestDTO {
 
     public void setRecipientPhone(String recipientPhone) {
         this.recipientPhone = recipientPhone;
+    }
+
+    public String getRecipientCIN() {
+        return recipientCIN;
+    }
+
+    public void setRecipientCIN(String recipientCIN) {
+        this.recipientCIN = recipientCIN;
     }
 
     public String getRecipientCountry() {

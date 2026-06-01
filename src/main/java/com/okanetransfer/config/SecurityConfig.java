@@ -1,12 +1,14 @@
 package com.okanetransfer.config;
 
 import com.okanetransfer.security.JwtAuthFilter;
+import com.okanetransfer.security.RateLimitingFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,17 +22,18 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Autowired private UserDetailsService userDetailsService;
     @Autowired private JwtAuthFilter jwtAuthFilter;
+    @Autowired private RateLimitingFilter rateLimitingFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
@@ -68,24 +71,21 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/js/**"),
                                 new AntPathRequestMatcher("/images/**")
                         ).permitAll()
-
                         .requestMatchers(new AntPathRequestMatcher("/api/client/**")).hasRole("CLIENT")
-
                         .requestMatchers(new AntPathRequestMatcher("/api/admin/**")).hasRole("ADMIN")
-
                         .requestMatchers(new AntPathRequestMatcher("/api/agencies/**")).hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers(new AntPathRequestMatcher("/api/transfers/**")).hasAnyRole("ADMIN", "AGENT", "CLIENT")
-                        .requestMatchers(new AntPathRequestMatcher("/api/envoi/**")).hasAnyRole("ADMIN", "AGENT", "CLIENT")
+                        .requestMatchers(new AntPathRequestMatcher("/api/envoi/**")).hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers(new AntPathRequestMatcher("/api/retrait/**")).hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers(new AntPathRequestMatcher("/api/caisse/**")).hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers(new AntPathRequestMatcher("/api/currencies/**")).hasRole("ADMIN")
                         .requestMatchers(new AntPathRequestMatcher("/api/reports/**")).hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers(new AntPathRequestMatcher("/api/audit/agents/**")).hasRole("ADMIN")
                         .requestMatchers(new AntPathRequestMatcher("/api/kyc-aml/**")).hasAnyRole("ADMIN", "AGENT")
-
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -94,15 +94,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.addAllowedOrigin("http://localhost:4200");
+        configuration.addAllowedOriginPattern("http://localhost:*");
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
         configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-
         return source;
     }
 }

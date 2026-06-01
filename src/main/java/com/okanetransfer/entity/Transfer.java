@@ -2,6 +2,7 @@ package com.okanetransfer.entity;
 
 import com.okanetransfer.entity.Currency;
 import com.okanetransfer.enums.TransferStatus;
+import com.okanetransfer.security.CryptoConverter;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -22,6 +23,8 @@ public class Transfer {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
+    // ─── CINs chiffrés en AES-256 (CDC 4.3) ─────────────────────────────────────
+    @Convert(converter = CryptoConverter.class)
     @Column(name = "sender_cin")
     private String senderCIN;
 
@@ -31,8 +34,10 @@ public class Transfer {
     @Column(name = "recipient_phone")
     private String recipientPhone;
 
+    @Convert(converter = CryptoConverter.class)
     @Column(name = "recipient_cin")
     private String recipientCIN;
+    // ─────────────────────────────────────────────────────────────────────────────
 
     @Column(name = "recipient_country")
     private String recipientCountry;
@@ -73,7 +78,12 @@ public class Transfer {
 
     public Transfer() {}
 
-    public Transfer(Long id, String transferCode, User sender, String senderCIN, String recipientName, String recipientPhone, String recipientCountry, String senderCountry, BigDecimal amount, Currency currency, BigDecimal convertedAmount, Currency targetCurrency, TransferStatus status, Agency agency, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Transfer(Long id, String transferCode, User sender, String senderCIN,
+                    String recipientName, String recipientPhone, String recipientCountry,
+                    String senderCountry, BigDecimal amount, Currency currency,
+                    BigDecimal convertedAmount, Currency targetCurrency,
+                    TransferStatus status, Agency agency,
+                    LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.transferCode = transferCode;
         this.sender = sender;
