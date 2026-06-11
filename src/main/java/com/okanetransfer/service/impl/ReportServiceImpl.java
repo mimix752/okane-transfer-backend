@@ -162,25 +162,34 @@ public class ReportServiceImpl implements ReportService {
         byAgency.sort((a, b) ->
                 b.getVolume().compareTo(a.getVolume()));
 
+        // ─── Grouper par paire source → destination ───────────────────────────
+        Map<String, List<Transfer>> groupedByCorridor = new HashMap<>();
+        for (Transfer t : transfers) {
+            String src = t.getCurrency() != null
+                    ? t.getCurrency().getName() : "N/A";
+            String dst = t.getTargetCurrency() != null
+                    ? t.getTargetCurrency().getName() : "N/A";
+            String key = src + " → " + dst;
+            groupedByCorridor
+                    .computeIfAbsent(key, k -> new ArrayList<>())
+                    .add(t);
+        }
+
         List<ReportResponseDTO.CorridorReportLine> byCorridor =
                 new ArrayList<>();
-        for (Map.Entry<String, BigDecimal> entry
-                : byCurrency.entrySet()) {
+        for (Map.Entry<String, List<Transfer>> entry
+                : groupedByCorridor.entrySet()) {
+            List<Transfer> ct = entry.getValue();
+            Transfer first    = ct.get(0);
 
-            String currencyCode = entry.getKey();
+            String src = first.getCurrency() != null
+                    ? first.getCurrency().getName() : "N/A";
+            String dst = first.getTargetCurrency() != null
+                    ? first.getTargetCurrency().getName() : "N/A";
 
-            List<Transfer> ct = transfers.stream()
-                    .filter(t -> t.getCurrency() != null
-                            && t.getCurrency().getName()
-                            .equals(currencyCode))
-                    .collect(Collectors.toList());
-
-            String targetCurrencyName = "N/A";
-            if (!ct.isEmpty()
-                    && ct.get(0).getTargetCurrency() != null) {
-                targetCurrencyName =
-                        ct.get(0).getTargetCurrency().getName();
-            }
+            BigDecimal corridorVolume = ct.stream()
+                    .map(Transfer::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             BigDecimal corridorFees = ct.stream()
                     .map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO)
@@ -188,15 +197,19 @@ public class ReportServiceImpl implements ReportService {
 
             byCorridor.add(
                     ReportResponseDTO.CorridorReportLine.builder()
-                            .sourceCountry(currencyCode)
-                            .destinationCountry(targetCurrencyName)
-                            .label(currencyCode + " → " + targetCurrencyName)
-                            .volume(entry.getValue())
+                            .sourceCountry(src)
+                            .destinationCountry(dst)
+                            .label(entry.getKey())
+                            .volume(corridorVolume)
                             .fees(corridorFees)
                             .transferCount(ct.size())
                             .build()
             );
         }
+
+        byCorridor.sort((a, b) ->
+                b.getVolume().compareTo(a.getVolume()));
+        // ──────────────────────────────────────────────────────────────────────
 
         return ReportResponseDTO.builder()
                 .from(from).to(to)

@@ -14,6 +14,7 @@ import com.okanetransfer.repository.CurrencyRepository;
 import com.okanetransfer.service.AlertService;
 import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.ExchangeRateService;
+import com.okanetransfer.util.SecurityUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,11 +34,11 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
     private static final BigDecimal ANOMALY_THRESHOLD =
             BigDecimal.valueOf(5.0);
 
-    private final CurrencyRepository             currencyRepository;
-    private final CurrencyRateRepository         currencyRateRepository;
-    private final CurrencyRateHistoryRepository  historyRepository;
-    private final AuditService                auditLogService;
-    private final AlertService                   alertService;
+    private final CurrencyRepository            currencyRepository;
+    private final CurrencyRateRepository        currencyRateRepository;
+    private final CurrencyRateHistoryRepository historyRepository;
+    private final AuditService                  auditLogService;
+    private final AlertService                  alertService;
 
     public ExchangeRateServiceImpl(
             CurrencyRepository currencyRepository,
@@ -45,13 +46,14 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
             CurrencyRateHistoryRepository historyRepository,
             AuditService auditLogService,
             AlertService alertService) {
-        this.currencyRepository    = currencyRepository;
+        this.currencyRepository     = currencyRepository;
         this.currencyRateRepository = currencyRateRepository;
-        this.historyRepository     = historyRepository;
-        this.auditLogService       = auditLogService;
-        this.alertService          = alertService;
+        this.historyRepository      = historyRepository;
+        this.auditLogService        = auditLogService;
+        this.alertService           = alertService;
     }
 
+    // ── Mise à jour manuelle ─────────────────────────────────
 
     @Override
     @Transactional
@@ -59,12 +61,16 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
             RateUpdateRequestDTO dto,
             String adminIp) {
 
-        // 1. Trouver la devise
         Currency currency = currencyRepository
                 .findById(dto.getCurrencyId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Currency not found: " + dto.getCurrencyId()
-                ));
+                        "Currency not found: " + dto.getCurrencyId()));
+
+        // USD est la devise de référence, son taux est toujours 1
+        if ("USD".equals(currency.getCode())) {
+            throw new IllegalArgumentException(
+                    "USD est la devise de référence et ne peut pas être modifiée manuellement.");
+        }
 
         BigDecimal oldRate = currency.getExchangeRate();
         BigDecimal newRate = dto.getNewRate();
@@ -82,17 +88,18 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
                 RateSource.MANUAL);
 
         auditLogService.log(
-                "SYSTEM", "MANUAL_RATE_UPDATE",
+                "Admin : " + SecurityUtils.getCurrentUsername(), "MANUAL_RATE_UPDATE",
                 "currency", currency.getId(),
-                "rate=" + oldRate +
-                "rate=" + newRate
+                LocalDateTime.now() + " - Changement de Taux de conversion "+ currency.getCode() + " -> USD de : "+ oldRate
+                        + " ,à : " + newRate
                         + (dto.getNote() != null
-                        ? ", note=" + dto.getNote() : "")
+                        ? ", note :" + dto.getNote() : "")
         );
 
         return CurrencyRateHistoryResponseDTO.fromEntity(history);
     }
 
+    // ── Synchronisation API ──────────────────────────────────
 
     @Override
     @Transactional
@@ -109,21 +116,20 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
 
         for (Currency currency : currencies) {
 
-            // MAD est la devise de référence, on ne la met pas à jour
-            if ("MAD".equals(currency.getCode())) {
+            // USD est la devise de référence, on ne la met pas à jour
+            if ("USD".equals(currency.getCode())) {
                 unchanged++;
                 continue;
             }
 
             try {
-                // Appel API externe pour récupérer le taux
+                // Récupérer le taux : currency → USD
                 BigDecimal fetchedRate =
-                        fetchRateFromApi(currency.getCode(), "MAD");
+                        fetchRateFromApi(currency.getCode(), "USD");
 
                 if (fetchedRate == null) {
                     failed++;
                     errorList.add(currency.getCode());
-                    // Générer alerte ECHEC_API
                     alertService.createApiFailureAlert(
                             currency.getCode());
                     continue;
@@ -137,7 +143,6 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
                     continue;
                 }
 
-                // Mettre à jour
                 currency.setExchangeRate(fetchedRate);
                 currencyRepository.save(currency);
 
@@ -160,11 +165,10 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
             }
         }
 
-        // Journaliser la synchro
         auditLogService.log(
                 "SYSTEM", "AUTO_RATE_SYNC", "currency",
                 null,
-                "updated=" + updated + ", failed=" + failed
+                LocalDateTime.now() + " - Tentative de Modification automatique des Taux de conversion -> USD: updated=" + updated + ", failed=" + failed
         );
 
         return ApiSyncResponseDTO.builder()
@@ -209,7 +213,6 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
 
     // ── Méthodes privées ─────────────────────────────────────
 
-    /** Sauvegarde une ligne dans currency_rate_history */
     private CurrencyRateHistory saveHistory(
             Currency currency,
             BigDecimal oldRate,
@@ -227,22 +230,21 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
         return historyRepository.save(history);
     }
 
-    /** Sauvegarde un snapshot dans currency_rate */
     private void saveCurrencyRateSnapshot(
             Currency fromCurrency,
             BigDecimal rate,
             RateSource source) {
 
-        // La devise "to" est MAD (devise de référence)
-        Currency mad = currencyRepository
-                .findByCode("MAD")
+        // La devise cible est USD (devise de référence)
+        Currency usd = currencyRepository
+                .findByCode("USD")
                 .orElse(null);
 
-        if (mad == null) return;
+        if (usd == null) return;
 
         CurrencyRate snapshot = CurrencyRate.builder()
                 .fromCurrency(fromCurrency)
-                .toCurrency(mad)
+                .toCurrency(usd)
                 .rate(rate)
                 .source(source)
                 .appliedAt(LocalDateTime.now())
@@ -269,18 +271,15 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
         if (variation.compareTo(ANOMALY_THRESHOLD) > 0) {
             alertService.createRateAnomalyAlert(
                     currency,
-                    oldRate, newRate, variation, source
-            );
+                    oldRate, newRate, variation, source);
         }
     }
 
     private BigDecimal fetchRateFromApi(String fromCode,
                                         String toCode) {
         try {
-
             String apiUrl = System.getProperty(
                     "exchange.rate.api.url",
-                    // URL de test publique
                     "https://api.exchangerate-api.com/v4/latest/"
                             + fromCode
             );
@@ -297,11 +296,9 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
                     HttpResponse.BodyHandlers.ofString()
             );
 
-            if (response.statusCode() != 200) {
-                return null;
-            }
+            if (response.statusCode() != 200) return null;
 
-            String body = response.body();
+            String body   = response.body();
             String search = "\"" + toCode + "\":";
             int idx = body.indexOf(search);
             if (idx == -1) return null;
@@ -315,7 +312,8 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
 
         } catch (Exception e) {
             System.err.println("API rate fetch failed for "
-                    + fromCode + "/" + toCode + ": " + e.getMessage());
+                    + fromCode + "/" + toCode
+                    + ": " + e.getMessage());
             return null;
         }
     }

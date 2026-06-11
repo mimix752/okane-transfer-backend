@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -168,9 +169,9 @@ public class ClientServiceImpl implements ClientService {
                 "UPDATE_PROFILE",
                 "User",
                 saved.getId(),
-                "old=[firstName=" + oldFirstName + ", lastName=" + oldLastName + ", phone=" + oldPhone + "]"
-                        + " | new=[firstName=" + saved.getFirstName() + ", lastName=" + saved.getLastName()
-                        + ", phone=" + saved.getPhone() + "]"
+                LocalDateTime.now() + " - L'utilisateur a modifier ses infos de firstName=" + oldFirstName + ", lastName=" + oldLastName + ", phone=" + oldPhone + " à "
+                        + " -> firstName=" + saved.getFirstName() + ", lastName=" + saved.getLastName()
+                        + ", phone=" + saved.getPhone()
         );
 
         // Notification
@@ -198,20 +199,17 @@ public class ClientServiceImpl implements ClientService {
 
         userRepository.save(client);
 
-        // Audit log
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 "DELETE_ACCOUNT",
                 "User",
                 client.getId(),
-                "old=[email=" + oldEmail + ", username=" + oldUsername + "] | new=[anonymized]"
+                LocalDateTime.now() +  " - Compte supprimé email=" + oldEmail + ", username=" + oldUsername + "] | new=[anonymized]"
         );
 
-        // Notification
         notificationService.sendAccountDeletionNotification(oldEmail, oldUsername);
     }
-
-    // ─── HELPER ───
+    
     private User getConnectedUser() {
         String username = SecurityContextHolder
                 .getContext()

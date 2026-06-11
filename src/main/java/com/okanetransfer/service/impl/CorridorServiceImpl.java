@@ -120,10 +120,9 @@ public class CorridorServiceImpl implements CorridorService {
                 "CREATE_CORRIDOR",
                 "Corridor",
                 saved.getId(),
-                "corridor=" + src + "→" + dest
-                        + " | srcCurrency=" + srcCurrency.getCode()
-                        + " | destCurrency=" + destCurrency.getCode()
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Creqtion de corridor=" + src + "→" + dest
+                        + " | Devise source : " + srcCurrency.getCode()
+                        + " | Devise destination : " + destCurrency.getCode()
         );
 
         return CorridorResponseDTO.fromEntity(saved);
@@ -172,13 +171,12 @@ public class CorridorServiceImpl implements CorridorService {
                 "UPDATE_CORRIDOR",
                 "Corridor",
                 id,
-                "old=[corridor=" + oldCorridor
-                        + ", srcCurrency=" + oldSrcCurrency
-                        + ", destCurrency=" + oldDestCurrency + "]"
-                        + " | new=[corridor=" + src + "→" + dest
-                        + ", srcCurrency=" + newSrcCurrency.getCode()
-                        + ", destCurrency=" + newDestCurrency.getCode() + "]"
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de corridor " + oldCorridor
+                        + ", oldSrcCurrency=" + oldSrcCurrency
+                        + ", oldDestCurrency=" + oldDestCurrency
+                        + " -> new corridor : " + src + "→" + dest
+                        + ", newSrcCurrency=" + newSrcCurrency.getCode()
+                        + ", newDestCurrency=" + newDestCurrency.getCode()
         );
 
         return CorridorResponseDTO.fromEntity(updated);
@@ -192,20 +190,21 @@ public class CorridorServiceImpl implements CorridorService {
         corridor.setActive(!previous);
         corridorRepository.save(corridor);
 
+        String corridorOldStatus = previous ? "Désactivé" : "Activé";
+        String corridorNewStatus = !previous ? "Désactivé" : "Activé";
+
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 previous ? "DEACTIVATE_CORRIDOR" : "ACTIVATE_CORRIDOR",
                 "Corridor",
                 id,
-                "old=" + previous
-                        + " | new=" + !previous
-                        + " | corridor=" + corridor.getSourceCountry()
+                LocalDateTime.now() + " - Modification de status de " + corridorOldStatus
+                        + " à " + corridorNewStatus
+                        + " pour le corridor " + corridor.getSourceCountry()
                         + "→" + corridor.getDestinationCountry()
-                        + " | ip=" + adminIp
         );
     }
 
-    // ─── Helpers ───────────────────────────────────────────────
 
     private Corridor findOrThrow(Long id) {
         return corridorRepository.findById(id)

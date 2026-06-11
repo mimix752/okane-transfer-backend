@@ -12,6 +12,7 @@ import com.okanetransfer.util.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -93,11 +94,10 @@ public class CurrencyServiceImpl implements CurrencyService {
                 "CREATE_CURRENCY",
                 "Currency",
                 saved.getId(),
-                "code=" + saved.getCode()
-                        + " | name=" + saved.getName()
-                        + " | symbol=" + saved.getSymbol()
-                        + " | rate=" + saved.getExchangeRate()
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Creation de Devise avec code=" + saved.getCode()
+                        + ", name=" + saved.getName()
+                        + ", symbol=" + saved.getSymbol()
+                        + ", rate=" + saved.getExchangeRate()
         );
 
         return CurrencyResponseDTO.fromEntity(saved);
@@ -134,15 +134,14 @@ public class CurrencyServiceImpl implements CurrencyService {
                 "UPDATE_CURRENCY",
                 "Currency",
                 id,
-                "old=[code=" + oldCode
-                        + ", name=" + oldName
-                        + ", symbol=" + oldSymbol
-                        + ", rate=" + oldRate + "]"
-                        + " | new=[code=" + updated.getCode()
-                        + ", name=" + updated.getName()
-                        + ", symbol=" + updated.getSymbol()
-                        + ", rate=" + updated.getExchangeRate() + "]"
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de Devise oldCode " + oldCode
+                        + ", oldName=" + oldName
+                        + ", oldSymbol=" + oldSymbol
+                        + ", oldRate=" + oldRate
+                        + " -> newCode=" + updated.getCode()
+                        + ", newName=" + updated.getName()
+                        + ", newSymbol=" + updated.getSymbol()
+                        + ", newRate=" + updated.getExchangeRate()
         );
 
         return CurrencyResponseDTO.fromEntity(updated);

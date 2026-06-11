@@ -3,7 +3,6 @@ package com.okanetransfer.service.impl;
 import com.okanetransfer.dto.response.JournalAuditResponseDTO;
 import com.okanetransfer.entity.JournalAudit;
 import com.okanetransfer.exception.ResourceNotFoundException;
-import com.okanetransfer.mapper.JournalAuditMapper;
 import com.okanetransfer.repository.JournalAuditRepository;
 import com.okanetransfer.service.AuditService;
 import jakarta.transaction.Transactional;
@@ -18,12 +17,9 @@ import java.util.Map;
 public class AuditServiceImpl implements AuditService {
 
     private final JournalAuditRepository repository;
-    private final JournalAuditMapper     mapper;
 
-    public AuditServiceImpl(JournalAuditRepository repository,
-                            JournalAuditMapper mapper) {
+    public AuditServiceImpl(JournalAuditRepository repository) {
         this.repository = repository;
-        this.mapper     = mapper;
     }
 
     @Override
@@ -49,7 +45,7 @@ public class AuditServiceImpl implements AuditService {
         JournalAudit audit = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Audit log not found with id: " + id));
-        return mapper.toDTO(audit);
+        return toDTO(audit);
     }
 
     @Override
@@ -76,7 +72,7 @@ public class AuditServiceImpl implements AuditService {
                 entityId, from, to);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("data",  mapper.toDTOList(rows));
+        result.put("data",  toDTOList(rows));
         result.put("total", total);
         result.put("page",  page);
         result.put("size",  size);
@@ -88,8 +84,25 @@ public class AuditServiceImpl implements AuditService {
     public List<JournalAuditResponseDTO> getHistoryForEntity(
             String entityType, Long entityId) {
 
-        return mapper.toDTOList(
+        return toDTOList(
                 repository.findByEntityTypeAndEntityId(
                         entityType, entityId));
     }
+
+    public JournalAuditResponseDTO toDTO(JournalAudit entity) {
+        if (entity == null) return null;
+        return new JournalAuditResponseDTO(
+                entity.getId(),
+                entity.getPerformedBy(),
+                entity.getAction(),
+                entity.getEntityType(),
+                entity.getEntityId(),
+                entity.getPerformedAt(),
+                entity.getDetails()
+        );
+    }
+
+        public List<JournalAuditResponseDTO> toDTOList(List<JournalAudit> list) {
+            return list.stream().map(this::toDTO).toList();
+        }
 }

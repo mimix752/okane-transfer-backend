@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -117,14 +118,13 @@ public class FeeGridServiceImpl implements FeeGridService {
                 "CREATE_FEEGRID",
                 "FeeGrid",
                 saved.getId(),
-                "corridorId=" + dto.getCorridorId()
+                LocalDateTime.now() + " - Creation d'une tranche de grille Tarifaire de corridor Id=" + dto.getCorridorId()
                         + " | range=[" + dto.getMinAmount()
                         + "-" + dto.getMaxAmount() + "]"
                         + " | fixedFee=" + dto.getFixedFee()
                         + " | percentageFee=" + dto.getPercentageFee()
                         + " | agencyShare=" + dto.getAgencyShare()
                         + " | centralShare=" + dto.getCentralShare()
-                        + " | ip=" + adminIp
         );
 
         return FeeGridResponseDTO.fromEntity(saved);
@@ -173,18 +173,17 @@ public class FeeGridServiceImpl implements FeeGridService {
                 "UPDATE_FEEGRID",
                 "FeeGrid",
                 id,
-                "old=[range=" + oldRange
+                LocalDateTime.now() + " - Modification de tranche de grille tarifaire oldInfos=[range=" + oldRange
                         + ", fixedFee=" + oldFixedFee
                         + ", percentageFee=" + oldPercentageFee
                         + ", agencyShare=" + oldAgencyShare
                         + ", centralShare=" + oldCentralShare + "]"
-                        + " | new=[range=[" + updated.getMinAmount()
+                        + " | newInfos =[range=[" + updated.getMinAmount()
                         + "-" + updated.getMaxAmount() + "]"
                         + ", fixedFee=" + updated.getFixedFee()
                         + ", percentageFee=" + updated.getPercentageFee()
                         + ", agencyShare=" + updated.getAgencyShare()
-                        + ", centralShare=" + updated.getCentralShare() + "]"
-                        + " | ip=" + adminIp
+                        + ", centralShare=" + updated.getCentralShare()
         );
 
         return FeeGridResponseDTO.fromEntity(updated);
@@ -198,21 +197,22 @@ public class FeeGridServiceImpl implements FeeGridService {
         feeGrid.setActive(!previous);
         feeGridRepository.save(feeGrid);
 
+        String oldStatus = previous ? "Désactivé" : "Activé";
+        String newStatus = !previous ? "Désactivé" : "Activé";
+
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 previous ? "DEACTIVATE_FEEGRID" : "ACTIVATE_FEEGRID",
                 "FeeGrid",
                 id,
-                "old=" + previous
-                        + " | new=" + !previous
+                LocalDateTime.now() + " - Modification de sttus old=" + oldStatus
+                        + " | new=" + newStatus
                         + " | corridorId=" + feeGrid.getCorridor().getId()
                         + " | range=[" + feeGrid.getMinAmount()
-                        + "-" + feeGrid.getMaxAmount() + "]"
-                        + " | ip=" + adminIp
+                        + "-" + feeGrid.getMaxAmount()
         );
     }
 
-    // ─── Helpers privés ────────────────────────────────────────
 
     private BigDecimal computeFee(FeeGrid grid, BigDecimal amount) {
         BigDecimal percentPart = amount

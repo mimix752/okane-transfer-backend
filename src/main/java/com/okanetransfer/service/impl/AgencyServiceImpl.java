@@ -102,10 +102,9 @@ public class AgencyServiceImpl implements AgencyService {
                 "CREATE_AGENCY",
                 "Agency",
                 saved.getId(),
-                "name=" + saved.getName()
-                        + " | country=" + saved.getCountry()
-                        + " | dailyLimit=" + saved.getDailyLimit()
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Creation de l'agence : " + saved.getName()
+                        + " | country : " + saved.getCountry()
+                        + " | dailyLimit = " + saved.getDailyLimit()
         );
 
         return toDTO(saved);
@@ -133,15 +132,14 @@ public class AgencyServiceImpl implements AgencyService {
                 "UPDATE_AGENCY",
                 "Agency",
                 id,
-                "old=[name=" + oldName
-                        + ", address=" + oldAddress
-                        + ", country=" + oldCountry
-                        + ", dailyLimit=" + oldDailyLimit + "]"
-                        + " | new=[name=" + saved.getName()
-                        + ", address=" + saved.getAddress()
-                        + ", country=" + saved.getCountry()
-                        + ", dailyLimit=" + saved.getDailyLimit() + "]"
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de L'agence " + oldName
+                        + "old infos :  address =" + oldAddress
+                        + ", country =" + oldCountry
+                        + ", dailyLimit =" + oldDailyLimit
+                        + " -> new infos : name =" + saved.getName()
+                        + ", address = " + saved.getAddress()
+                        + ", country = " + saved.getCountry()
+                        + ", dailyLimit =" + saved.getDailyLimit()
         );
 
         return toDTO(saved);
@@ -155,12 +153,15 @@ public class AgencyServiceImpl implements AgencyService {
         agency.setActive(!previous);
         agencyRepository.save(agency);
 
+        String oldStatus = previous ? "Désactivé" : "Activé";
+        String newStatus = !previous ? "Désactivé" : "Activé";
+
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 previous ? "DISABLE_AGENCY" : "ENABLE_AGENCY",
                 "Agency",
                 id,
-                "old=" + previous + " | new=" + !previous + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de status de l'agence oldStatus : " + oldStatus + " | newStatus : " + newStatus
         );
     }
 
@@ -178,7 +179,7 @@ public class AgencyServiceImpl implements AgencyService {
                 .executeUpdate();
 
         entityManager.createNativeQuery(
-                        "INSERT INTO agent (id, agency_id, active) VALUES (:id, :agencyId, true) " +
+                        "INSERT INTO agents (id, agency_id, active) VALUES (:id, :agencyId, true) " +
                                 "ON CONFLICT (id) DO UPDATE SET agency_id = :agencyId, active = true")
                 .setParameter("id", userId)
                 .setParameter("agencyId", agencyId)
@@ -189,7 +190,7 @@ public class AgencyServiceImpl implements AgencyService {
                 "ADD_AGENT",
                 "Agency",
                 agencyId,
-                "userId=" + userId + " | username=" + user.getUsername() + " | ip=" + adminIp
+                LocalDateTime.now() + " - Affectiation de L'agent dont Id =" + userId + " et  username=" + user.getUsername() + " à l'agence =" + agency.getName()
         );
     }
 
@@ -212,7 +213,7 @@ public class AgencyServiceImpl implements AgencyService {
                 "REMOVE_AGENT",
                 "Agency",
                 agencyId,
-                "userId=" + userId + " | username=" + username + " | ip=" + adminIp
+                LocalDateTime.now() + " - L'agent dont l'Id = " + userId + " | username=" + username + " est supprimé"
         );
     }
 

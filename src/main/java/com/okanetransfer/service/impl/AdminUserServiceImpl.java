@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 public class AdminUserServiceImpl implements AdminUserService {
 
@@ -29,7 +31,6 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // ─── Queries ───────────────────────────────────────────────
 
     @Transactional(readOnly = true)
     @Override
@@ -52,7 +53,6 @@ public class AdminUserServiceImpl implements AdminUserService {
         return toDTO(findOrThrow(id));
     }
 
-    // ─── Commands ──────────────────────────────────────────────
 
     @Transactional
     @Override
@@ -72,9 +72,8 @@ public class AdminUserServiceImpl implements AdminUserService {
                 "CREATE_USER",
                 "User",
                 saved.getId(),
-                "email=" + saved.getEmail()
-                        + " | role=" + saved.getRole()
-                        + " | ip=" + adminIp
+                LocalDateTime.now()+" - Utilisateur créé avec email : " + saved.getEmail()
+                        + " dont le role est : " + saved.getRole()
         );
 
         return toDTO(saved);
@@ -102,13 +101,13 @@ public class AdminUserServiceImpl implements AdminUserService {
                 "UPDATE_USER",
                 "User",
                 id,
-                "old=[username=" + oldUsername
-                        + ", email=" + oldEmail
-                        + ", role=" + oldRole + "]"
-                        + " | new=[username=" + saved.getUsername()
-                        + ", email=" + saved.getEmail()
-                        + ", role=" + saved.getRole() + "]"
-                        + " | ip=" + adminIp
+                LocalDateTime.now()+" - Modification de L'utilisateur "+ saved.getId() + " old infos : "
+                        + "username : " +  oldUsername
+                        + ", email : " + oldEmail
+                        + ", role : " + oldRole
+                        + " | New infos : username :" + saved.getUsername()
+                        + ", email : " + saved.getEmail()
+                        + ", role : " + saved.getRole()
         );
 
         return toDTO(saved);
@@ -123,14 +122,16 @@ public class AdminUserServiceImpl implements AdminUserService {
         user.setEnabled(!previous);
         userRepository.save(user);
 
+        String oldStatus = previous ? "Désactivé" : "Activé";
+        String newStatus = !previous ? "Désactivé" : "Activé";
+
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 previous ? "DISABLE_USER" : "ENABLE_USER",
                 "User",
                 id,
-                "old=" + previous
-                        + " | new=" + !previous
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de status de l'utilisateur old : " + oldStatus
+                        + " -> new : " + newStatus
         );
     }
 
@@ -148,13 +149,11 @@ public class AdminUserServiceImpl implements AdminUserService {
                 "UPDATE_ROLE",
                 "User",
                 id,
-                "old=" + oldRole.name()
-                        + " | new=" + dto.getRole().name()
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de role de L#utilisateur old=" + oldRole.name()
+                        + " -> new=" + dto.getRole().name()
         );
     }
 
-    // ─── Helpers ───────────────────────────────────────────────
 
     private User findOrThrow(Long id) {
         return userRepository.findById(id)
