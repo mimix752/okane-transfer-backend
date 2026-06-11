@@ -8,5 +8,6 @@ import java.util.Optional;
 public interface GroqChatService {
 
 
-    Optional<String> ask(String userMessage, List<ChatMessage> history);
+    Optional<String> ask(String userMessage, List<ChatMessage> history,String lang);
+    String translate(String text, String targetLang);
 }

@@ -18,3 +18,10 @@ groq.api.key=
 groq.api.url=https://api.groq.com/openai/v1/chat/completions
 groq.model=llama-3.1-8b-instant
 groq.timeout.seconds=8
+
+# https://jina.ai
+jina.api.key=
+jina.api.url=https://api.jina.ai/v1/embeddings
+jina.model=jina-embeddings-v3
+
+faq.similarity.threshold=0.82
