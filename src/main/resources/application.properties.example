@@ -1,0 +1,20 @@
+db.url=
+db.username=
+db.password=
+db.driver=
+
+hibernate.ddl-auto=update
+hibernate.show_sql=true
+
+jwt.secret=
+
+# AES secret key 32 digits
+crypto.aes.secret=
+
+# https://console.groq.com/keys
+
+groq.api.key=
+
+groq.api.url=https://api.groq.com/openai/v1/chat/completions
+groq.model=llama-3.1-8b-instant
+groq.timeout.seconds=8

@@ -1,5 +1,6 @@
 package com.okanetransfer.service.impl;
 
+import com.okanetransfer.dto.request.ChangePasswordRequestDTO;
 import com.okanetransfer.dto.response.TransferResponseDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
 import com.okanetransfer.entity.Transfer;
@@ -8,6 +9,7 @@ import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.repository.UserRepository;
+import com.okanetransfer.security.ClientRateLimiterService;
 import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.ClientService;
 import com.okanetransfer.service.NotificationService;
@@ -15,6 +17,7 @@ import com.okanetransfer.util.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,9 @@ import java.util.stream.Collectors;
 public class ClientServiceImpl implements ClientService {
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -38,6 +44,9 @@ public class ClientServiceImpl implements ClientService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private ClientRateLimiterService rateLimiterService;
 
     // ─── GET MY TRANSFERS ───
     @Override
@@ -146,32 +155,39 @@ public class ClientServiceImpl implements ClientService {
     // ─── UPDATE PROFILE ───
     @Override
     @Transactional
-    public UserResponseDTO updateProfile(String firstName, String lastName, String phone) {
+    public UserResponseDTO updateProfile(String firstName, String lastName, String phone, String username) {
         User client = getConnectedUser();
 
         String oldFirstName = client.getFirstName();
         String oldLastName = client.getLastName();
         String oldPhone = client.getPhone();
+        String oldusername = client.getUsername();
 
-        // Validation et mise à jour — ignorer les valeurs vides
         if (firstName != null && !firstName.trim().isEmpty())
             client.setFirstName(firstName.trim());
         if (lastName != null && !lastName.trim().isEmpty())
             client.setLastName(lastName.trim());
         if (phone != null && !phone.trim().isEmpty())
             client.setPhone(phone.trim());
+        if (username != null && !username.trim().isEmpty()) {
+            if (!username.trim().equals(client.getUsername())) {
+                rateLimiterService.check(String.valueOf(client.getId()), "CHANGE_USERNAME", 168);
+                if (userRepository.existsByUsername(username.trim()))
+                    throw new IllegalArgumentException("Ce nom d'utilisateur est déjà pris");
+                client.setUsername(username.trim());
+            }
+        }
 
         User saved = userRepository.save(client);
 
-        // Audit log
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 "UPDATE_PROFILE",
                 "User",
                 saved.getId(),
-                LocalDateTime.now() + " - L'utilisateur a modifier ses infos de firstName=" + oldFirstName + ", lastName=" + oldLastName + ", phone=" + oldPhone + " à "
+                LocalDateTime.now() + " - L'utilisateur a modifier ses infos de firstName=" + oldFirstName + ", lastName=" + oldLastName + ", phone=" + oldPhone + ",username"+ oldusername + " à "
                         + " -> firstName=" + saved.getFirstName() + ", lastName=" + saved.getLastName()
-                        + ", phone=" + saved.getPhone()
+                        + ", phone=" + saved.getPhone() + ", username=" + saved.getUsername()
         );
 
         // Notification
@@ -217,5 +233,33 @@ public class ClientServiceImpl implements ClientService {
                 .getName();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur connecté non trouvé : " + username));
+    }
+
+
+    //Modifier MDP
+
+    @Override
+    @Transactional
+    public void changePassword(ChangePasswordRequestDTO request) {
+        rateLimiterService.check(SecurityUtils.getCurrentUsername(), "CHANGE_PASSWORD", 6);
+        User client = getConnectedUser();
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), client.getPassword()))
+            throw new IllegalArgumentException("Mot de passe actuel incorrect");
+
+        if (passwordEncoder.matches(request.getNewPassword(), client.getPassword()))
+            throw new IllegalArgumentException("Le nouveau mot de passe doit être différent de l'ancien");
+
+        client.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(client);
+
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "CHANGE_PASSWORD",
+                "User",
+                client.getId(),
+                LocalDateTime.now() + " - L'utilisateur a changé son mot de passe"
+        );
+
     }
 }

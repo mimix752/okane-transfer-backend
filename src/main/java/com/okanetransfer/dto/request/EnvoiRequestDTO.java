@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 
 public class EnvoiRequestDTO {
 
-    // ─── Expéditeur ───
     @NotBlank(message = "Sender name is required")
     private String senderName;
 

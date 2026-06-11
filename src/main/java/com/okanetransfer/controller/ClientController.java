@@ -1,5 +1,7 @@
 package com.okanetransfer.controller;
 
+import com.okanetransfer.dto.request.ChangePasswordRequestDTO;
+import com.okanetransfer.dto.request.UpdateProfileRequest;
 import com.okanetransfer.dto.response.TransferResponseDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
 import com.okanetransfer.service.ClientService;
@@ -58,12 +60,14 @@ public class ClientController {
 
     @PutMapping("/profile")
     @Operation(summary = "Modifier mon profil")
-    public ResponseEntity<UserResponseDTO> updateProfile(
-            @RequestParam(required = false) String firstName,
-            @RequestParam(required = false) String lastName,
-            @RequestParam(required = false) String phone) {
+    public ResponseEntity<UserResponseDTO> updateProfile(@RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(
-                clientService.updateProfile(firstName, lastName, phone));
+                clientService.updateProfile(
+                        request.getFirstName(),
+                        request.getLastName(),
+                        request.getPhone(),
+                        request.getUsername()
+                ));
     }
 
     @DeleteMapping("/account")
@@ -71,5 +75,12 @@ public class ClientController {
     public ResponseEntity<String> deleteAccount() {
         clientService.deleteAccount();
         return ResponseEntity.ok("Compte supprimé conformément au RGPD");
+    }
+
+    @PutMapping("/password")
+    @Operation(summary = "Changer l mdp")
+    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequestDTO request) {
+        clientService.changePassword(request);
+        return ResponseEntity.ok("Mot de passe modifié");
     }
 }
