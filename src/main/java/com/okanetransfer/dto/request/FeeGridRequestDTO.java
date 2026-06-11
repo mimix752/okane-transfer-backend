@@ -15,7 +15,6 @@ public class FeeGridRequestDTO {
             message = "Min amount: max 13 digits, 2 decimals")
     private BigDecimal minAmount;
 
-    @NotNull(message = "Maximum amount is required")
     @Positive(message = "Maximum amount must be positive")
     @Digits(integer = 13, fraction = 2,
             message = "Max amount: max 13 digits, 2 decimals")

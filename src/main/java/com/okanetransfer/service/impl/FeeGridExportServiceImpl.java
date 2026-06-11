@@ -54,11 +54,11 @@ public class FeeGridExportServiceImpl
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ByteArrayOutputStream exportPdf(Long corridorId) {
         Corridor corridor = findCorridorOrThrow(corridorId);
         List<FeeGrid> grids =
-                feeGridRepository.findByCorridor_IdAndActive(
+                feeGridRepository.findByCorridor_IdAndActiveOrderByMinAmountAsc(
                         corridorId, true);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -98,7 +98,7 @@ public class FeeGridExportServiceImpl
 
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ByteArrayOutputStream exportAllPdf() {
         List<Corridor> corridors =
                 corridorRepository.findByActive(true);
@@ -129,7 +129,7 @@ public class FeeGridExportServiceImpl
 
             for (Corridor corridor : corridors) {
                 List<FeeGrid> grids =
-                        feeGridRepository.findByCorridor_IdAndActive(
+                        feeGridRepository.findByCorridor_IdAndActiveOrderByMinAmountAsc(
                                 corridor.getId(), true);
 
                 if (grids.isEmpty()) continue;
@@ -160,11 +160,11 @@ public class FeeGridExportServiceImpl
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ByteArrayOutputStream exportCsv(Long corridorId) {
         Corridor corridor = findCorridorOrThrow(corridorId);
         List<FeeGrid> grids =
-                feeGridRepository.findByCorridor_IdAndActive(
+                feeGridRepository.findByCorridor_IdAndActiveOrderByMinAmountAsc(
                         corridorId, true);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -217,7 +217,7 @@ public class FeeGridExportServiceImpl
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ByteArrayOutputStream exportAllCsv() {
         List<Corridor> corridors =
                 corridorRepository.findByActive(true);
@@ -236,7 +236,7 @@ public class FeeGridExportServiceImpl
 
             for (Corridor corridor : corridors) {
                 List<FeeGrid> grids =
-                        feeGridRepository.findByCorridor_IdAndActive(
+                        feeGridRepository.findByCorridor_IdAndActiveOrderByMinAmountAsc(
                                 corridor.getId(), true);
 
                 if (grids.isEmpty()) continue;
@@ -436,10 +436,10 @@ public class FeeGridExportServiceImpl
     }
 
     private String formatMax(BigDecimal maxAmount) {
-        if (maxAmount == null) return "∞";
+        if (maxAmount == null) return "Illimite";
         if (maxAmount.compareTo(
                 BigDecimal.valueOf(9_999_999)) >= 0) {
-            return "∞";
+            return "Illimite";
         }
         return formatAmount(maxAmount);
     }

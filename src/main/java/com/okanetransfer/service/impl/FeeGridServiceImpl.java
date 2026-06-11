@@ -42,7 +42,7 @@ public class FeeGridServiceImpl implements FeeGridService {
     public List<FeeGridResponseDTO> getByCorridor(Long corridorId) {
         findCorridorOrThrow(corridorId);
         return feeGridRepository
-                .findByCorridor_IdAndActive(corridorId, true)
+                .findByCorridor_IdAndActiveOrderByMinAmountAsc(corridorId, true)
                 .stream()
                 .map(FeeGridResponseDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -225,6 +225,7 @@ public class FeeGridServiceImpl implements FeeGridService {
     }
 
     private void validateAmountRange(BigDecimal min, BigDecimal max) {
+        if (max == null) return;
         if (min.compareTo(max) >= 0)
             throw new IllegalArgumentException(
                     "minAmount must be strictly less than maxAmount");

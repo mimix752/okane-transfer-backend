@@ -237,20 +237,18 @@ public class AgencyServiceImpl implements AgencyService {
                 .collect(Collectors.toList());
     }
 
-    private AgencyPerformanceResponseDTO buildPerformance(
-            Agency agency) {
+    private AgencyPerformanceResponseDTO buildPerformance(Agency agency) {
 
+        // ✅ FIX : suppression de ZoneOffset.UTC — on utilise l'heure locale
+        // pour correspondre aux timestamps stockés en base
         LocalDateTime startOfDay   = LocalDate.now().atStartOfDay();
-        LocalDateTime startOfMonth =
-                LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         LocalDateTime now          = LocalDateTime.now();
 
-        // transferts du mois via repository
         List<Transfer> monthlyTransfers =
                 transferRepository.findByAgencyIdAndCreatedAtBetween(
                         agency.getId(), startOfMonth, now);
 
-        // transferts du jour
         List<Transfer> dailyTransfers = monthlyTransfers.stream()
                 .filter(t -> t.getCreatedAt() != null
                         && !t.getCreatedAt().isBefore(startOfDay))
@@ -265,23 +263,19 @@ public class AgencyServiceImpl implements AgencyService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal dailyFees = dailyTransfers.stream()
-                .map(t -> t.getFees() != null
-                        ? t.getFees() : BigDecimal.ZERO)
+                .map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal monthlyFees = monthlyTransfers.stream()
-                .map(t -> t.getFees() != null
-                        ? t.getFees() : BigDecimal.ZERO)
+                .map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // % plafond journalier utilisé
         BigDecimal usedPercent = BigDecimal.ZERO;
         if (agency.getDailyLimit() != null
-                && agency.getDailyLimit()
-                .compareTo(BigDecimal.ZERO) > 0) {
+                && agency.getDailyLimit().compareTo(BigDecimal.ZERO) > 0) {
             usedPercent = dailyVolume
-                    .divide(agency.getDailyLimit(), 4,
-                            RoundingMode.HALF_UP)
+                    .divide(agency.getDailyLimit(), 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100))
                     .setScale(2, RoundingMode.HALF_UP);
         }
@@ -294,9 +288,7 @@ public class AgencyServiceImpl implements AgencyService {
         BigDecimal successRate = monthlyTransfers.isEmpty()
                 ? BigDecimal.ZERO
                 : BigDecimal.valueOf(paidCount)
-                .divide(BigDecimal.valueOf(
-                                monthlyTransfers.size()), 4,
-                        RoundingMode.HALF_UP)
+                .divide(BigDecimal.valueOf(monthlyTransfers.size()), 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
                 .setScale(2, RoundingMode.HALF_UP);
 
@@ -323,6 +315,7 @@ public class AgencyServiceImpl implements AgencyService {
                 .reportDate(LocalDate.now())
                 .build();
     }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Override
     public void checkAndDeductBalance(Long agencyId, BigDecimal amount) {
@@ -362,8 +355,6 @@ public class AgencyServiceImpl implements AgencyService {
         return agencyRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Agency not found with id: " + id));
     }
-
-
 
     private AgencyResponseDTO toDTO(Agency agency) {
         int agentCount = agentRepository.findByAgency_Id(agency.getId()).size();
