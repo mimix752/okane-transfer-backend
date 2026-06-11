@@ -1,5 +1,6 @@
 package com.okanetransfer.controller;
 
+import com.okanetransfer.dto.response.CorridorStatsResponseDTO;
 import com.okanetransfer.dto.response.ReportResponseDTO;
 import com.okanetransfer.service.ReportService;
 import com.okanetransfer.util.ApiResponse;
@@ -32,6 +33,8 @@ public class ReportController {
         this.reportService = reportService;
     }
 
+    // RAPPORT GLOBAL
+
     @Operation(
             summary     = "Global financial report",
             description = "Complete report for a period: volume, fees, "
@@ -48,7 +51,6 @@ public class ReportController {
     @GetMapping
     public ResponseEntity<ApiResponse<ReportResponseDTO>>
     getGlobalReport(
-
             @Parameter(description = "Start date yyyy-MM-dd",
                     example = "2024-01-01")
             @RequestParam
@@ -62,49 +64,70 @@ public class ReportController {
             LocalDate to) {
 
         validateDateRange(from, to);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Report generated",
+                reportService.getGlobalReport(from, to)));
+    }
 
-        ReportResponseDTO report =
-                reportService.getGlobalReport(from, to);
+    // RAPPORT PAR CORRIDOR — VOLUME JOURNALIER + MENSUEL
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Report generated", report));
+    @Operation(
+            summary     = "Corridor stats — daily & monthly volumes",
+            description = "Returns volume journalier ET mensuel "
+                    + "pour un corridor précis. "
+                    + "Inclut : nombre d'opérations, CA, "
+                    + "commissions agence/centrale. "
+                    + "Période calculée automatiquement : "
+                    + "aujourd'hui pour le journalier, "
+                    + "1er du mois à maintenant pour le mensuel."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description  = "Stats retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description  = "Corridor not found")
+    })
+    @GetMapping("/by-corridor/{corridorId}")
+    public ResponseEntity<ApiResponse<CorridorStatsResponseDTO>>
+    getCorridorStats(
+            @Parameter(
+                    description = "ID du corridor",
+                    example     = "1")
+            @PathVariable Long corridorId) {
+
+        CorridorStatsResponseDTO stats =
+                reportService.getCorridorStats(corridorId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Corridor stats retrieved", stats));
     }
 
     @Operation(
-            summary     = "Report filtered by corridor / agency",
-            description = "Returns report filtered by agency name."
+            summary     = "All corridors stats — daily & monthly",
+            description = "Retourne les volumes journaliers ET mensuels "
+                    + "de TOUS les corridors actifs. "
+                    + "Triés par volume mensuel décroissant."
     )
     @GetMapping("/by-corridor")
-    public ResponseEntity<ApiResponse<ReportResponseDTO>>
-    getReportByCorridor(
+    public ResponseEntity<ApiResponse<List<CorridorStatsResponseDTO>>>
+    getAllCorridorStats() {
 
-            @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate from,
+        List<CorridorStatsResponseDTO> stats =
+                reportService.getAllCorridorStats();
 
-            @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate to,
-
-            @Parameter(description = "Agency name",
-                    example = "Agence Casablanca")
-            @RequestParam String corridor) {
-
-        validateDateRange(from, to);
-
-        ReportResponseDTO report =
-                reportService.getReportByCorridor(
-                        from, to, corridor);
-
-        return ResponseEntity.ok(
-                ApiResponse.success("Corridor report generated",
-                        report));
+        return ResponseEntity.ok(ApiResponse.success(
+                "All corridor stats retrieved", stats));
     }
+
+
+    // RAPPORT PAR STATUT
 
     @Operation(
             summary     = "Report filtered by transfer status",
-            description = "Allowed: PENDING, VALIDATED, PAID, "
-                    + "CANCELLED, EXPIRED"
+            description = "Valeurs autorisées : "
+                    + "PENDING, VALIDATED, PAID, CANCELLED, EXPIRED"
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -117,7 +140,6 @@ public class ReportController {
     @GetMapping("/by-status")
     public ResponseEntity<ApiResponse<ReportResponseDTO>>
     getReportByStatus(
-
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate from,
@@ -133,21 +155,20 @@ public class ReportController {
         validateDateRange(from, to);
         validateStatus(status);
 
-        ReportResponseDTO report =
-                reportService.getReportByStatus(from, to, status);
-
-        return ResponseEntity.ok(
-                ApiResponse.success("Status report generated", report));
+        return ResponseEntity.ok(ApiResponse.success(
+                "Status report generated",
+                reportService.getReportByStatus(from, to, status)));
     }
+
+    // RAPPORT REVENUS
 
     @Operation(
             summary     = "Revenue report",
-            description = "Total revenue for PAID transfers only."
+            description = "CA total sur les transferts PAID uniquement."
     )
     @GetMapping("/revenue")
     public ResponseEntity<ApiResponse<ReportResponseDTO>>
     getRevenueReport(
-
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate from,
@@ -158,21 +179,21 @@ public class ReportController {
 
         validateDateRange(from, to);
 
-        ReportResponseDTO report =
-                reportService.getReportByStatus(from, to, "PAID");
-
-        return ResponseEntity.ok(
-                ApiResponse.success("Revenue report generated", report));
+        return ResponseEntity.ok(ApiResponse.success(
+                "Revenue report generated",
+                reportService.getReportByStatus(from, to, "PAID")));
     }
+
+    // VALIDATIONS PRIVÉES
 
     private void validateDateRange(LocalDate from, LocalDate to) {
         if (from.isAfter(to)) {
             throw new IllegalArgumentException(
-                    "'from' date must be before or equal to 'to' date");
+                    "'from' doit être avant ou égal à 'to'");
         }
         if (from.plusMonths(12).isBefore(to)) {
             throw new IllegalArgumentException(
-                    "Date range cannot exceed 12 months");
+                    "La période ne peut pas dépasser 12 mois");
         }
     }
 
@@ -183,8 +204,8 @@ public class ReportController {
         );
         if (!allowed.contains(status.toUpperCase())) {
             throw new IllegalArgumentException(
-                    "Invalid status: '" + status
-                            + "'. Allowed: " + allowed);
+                    "Statut invalide : '" + status
+                            + "'. Autorisés : " + allowed);
         }
     }
 }
