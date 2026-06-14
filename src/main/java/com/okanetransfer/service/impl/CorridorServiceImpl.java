@@ -91,10 +91,6 @@ public class CorridorServiceImpl implements CorridorService {
         String src  = dto.getSourceCountry().toUpperCase();
         String dest = dto.getDestinationCountry().toUpperCase();
 
-        if (src.equals(dest))
-            throw new IllegalArgumentException(
-                    "Source and destination countries must be different");
-
         if (corridorRepository
                 .existsBySourceCountryAndDestinationCountry(src, dest))
             throw new IllegalArgumentException(
@@ -136,10 +132,6 @@ public class CorridorServiceImpl implements CorridorService {
         Corridor corridor = findOrThrow(id);
         String src  = dto.getSourceCountry().toUpperCase();
         String dest = dto.getDestinationCountry().toUpperCase();
-
-        if (src.equals(dest))
-            throw new IllegalArgumentException(
-                    "Source and destination countries must be different");
 
         if (corridorRepository
                 .existsBySourceCountryAndDestinationCountryAndIdNot(
@@ -324,13 +316,16 @@ public class CorridorServiceImpl implements CorridorService {
                 .build();
     }
 
-    // Vérifie si un transfert appartient à ce corridor
-// en comparant les devises source/destination
+
     private boolean matchesCorridor(Transfer t, Corridor corridor) {
         if (t.getCurrency() == null) return false;
-        String transferCurrency = t.getCurrency().getName();
-        String corridorFromCode =
-                corridor.getSourceCurrency().getCode();
-        return transferCurrency.equals(corridorFromCode);
+        String transferCurrencySrc = t.getCurrency().getCode();
+        String corridorCurrencySrc = corridor.getSourceCurrency().getCode();
+
+        String transferCurrencyDest = t.getTargetCurrency().getCode();
+        String corridorCurrencyDest = corridor.getDestinationCurrency().getCode();
+
+
+        return (transferCurrencySrc.equals(corridorCurrencySrc)) && (transferCurrencyDest.equals(corridorCurrencyDest));
     }
 }

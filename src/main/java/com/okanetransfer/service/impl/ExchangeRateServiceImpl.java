@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -81,7 +82,7 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
         CurrencyRateHistory history = saveHistory(
                 currency, oldRate, newRate, RateSource.MANUAL);
 
-        saveCurrencyRateSnapshot(currency, newRate,
+        updateAllCurrencyRates(currency, newRate,
                 RateSource.MANUAL);
 
         checkRateAnomaly(currency, oldRate, newRate,
@@ -148,7 +149,7 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
 
                 saveHistory(currency, oldRate, fetchedRate,
                         RateSource.API_YAHOO_FINANCE);
-                saveCurrencyRateSnapshot(currency, fetchedRate,
+                updateAllCurrencyRates(currency, fetchedRate,
                         RateSource.API_YAHOO_FINANCE);
                 checkRateAnomaly(currency, oldRate, fetchedRate,
                         RateSource.API_YAHOO_FINANCE);
@@ -230,27 +231,63 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
         return historyRepository.save(history);
     }
 
-    private void saveCurrencyRateSnapshot(
+    private void updateAllCurrencyRates(
             Currency fromCurrency,
-            BigDecimal rate,
+            BigDecimal newRateToUsd,
             RateSource source) {
 
-        // La devise cible est USD (devise de référence)
-        Currency usd = currencyRepository
-                .findByCode("USD")
-                .orElse(null);
+        List<Currency> allCurrencies = currencyRepository.findByActive(true);
 
-        if (usd == null) return;
+        for (Currency otherCurrency : allCurrencies) {
 
-        CurrencyRate snapshot = CurrencyRate.builder()
-                .fromCurrency(fromCurrency)
-                .toCurrency(usd)
-                .rate(rate)
-                .source(source)
-                .appliedAt(LocalDateTime.now())
-                .build();
+            if (otherCurrency.getId().equals(fromCurrency.getId())) continue;
 
-        currencyRateRepository.save(snapshot);
+            BigDecimal otherToUsd = otherCurrency.getExchangeRate();
+            if (otherToUsd == null || otherToUsd.compareTo(BigDecimal.ZERO) == 0)
+                continue;
+
+            // ── Sens 1 : fromCurrency → otherCurrency ──────────────
+            BigDecimal fromToOther;
+            if ("USD".equals(otherCurrency.getCode())) {
+                fromToOther = newRateToUsd;
+            } else {
+                fromToOther = newRateToUsd
+                        .multiply(BigDecimal.ONE.divide(otherToUsd, 8, RoundingMode.HALF_UP))
+                        .setScale(8, RoundingMode.HALF_UP);
+            }
+
+            CurrencyRate rowFrom = currencyRateRepository
+                    .findByFromCurrencyAndToCurrency(fromCurrency, otherCurrency)
+                    .orElse(CurrencyRate.builder()
+                            .fromCurrency(fromCurrency)
+                            .toCurrency(otherCurrency)
+                            .build());
+            rowFrom.setRate(fromToOther);
+            rowFrom.setSource(source);
+            rowFrom.setAppliedAt(LocalDateTime.now());
+            currencyRateRepository.save(rowFrom);
+
+            // ── Sens 2 : otherCurrency → fromCurrency ──────────────
+            BigDecimal otherToFrom;
+            if ("USD".equals(otherCurrency.getCode())) {
+                otherToFrom = BigDecimal.ONE.divide(newRateToUsd, 8, RoundingMode.HALF_UP);
+            } else {
+                otherToFrom = otherToUsd
+                        .multiply(BigDecimal.ONE.divide(newRateToUsd, 8, RoundingMode.HALF_UP))
+                        .setScale(8, RoundingMode.HALF_UP);
+            }
+
+            CurrencyRate rowOther = currencyRateRepository
+                    .findByFromCurrencyAndToCurrency(otherCurrency, fromCurrency)
+                    .orElse(CurrencyRate.builder()
+                            .fromCurrency(otherCurrency)
+                            .toCurrency(fromCurrency)
+                            .build());
+            rowOther.setRate(otherToFrom);
+            rowOther.setSource(source);
+            rowOther.setAppliedAt(LocalDateTime.now());
+            currencyRateRepository.save(rowOther);
+        }
     }
 
     private void checkRateAnomaly(

@@ -3,8 +3,11 @@ package com.okanetransfer.service.impl;
 import com.okanetransfer.dto.request.CurrencyRequestDTO;
 import com.okanetransfer.dto.response.CurrencyResponseDTO;
 import com.okanetransfer.entity.Currency;
+import com.okanetransfer.entity.CurrencyRate;
+import com.okanetransfer.enums.RateSource;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
+import com.okanetransfer.repository.CurrencyRateRepository;
 import com.okanetransfer.repository.CurrencyRepository;
 import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.CurrencyService;
@@ -12,6 +15,8 @@ import com.okanetransfer.util.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,19 +24,21 @@ import java.util.stream.Collectors;
 @Service
 public class CurrencyServiceImpl implements CurrencyService {
 
-    private final CurrencyRepository currencyRepository;
-    private final CorridorRepository corridorRepository;
-    private final AuditService       auditService;
+    private final CurrencyRepository     currencyRepository;
+    private final CorridorRepository     corridorRepository;
+    private final CurrencyRateRepository currencyRateRepository;
+    private final AuditService           auditService;
 
     public CurrencyServiceImpl(CurrencyRepository currencyRepository,
                                CorridorRepository corridorRepository,
+                               CurrencyRateRepository currencyRateRepository,
                                AuditService auditService) {
-        this.currencyRepository = currencyRepository;
-        this.corridorRepository = corridorRepository;
-        this.auditService       = auditService;
+        this.currencyRepository     = currencyRepository;
+        this.corridorRepository     = corridorRepository;
+        this.currencyRateRepository = currencyRateRepository;
+        this.auditService           = auditService;
     }
 
-    // ─── Queries ───────────────────────────────────────────────
 
     @Override
     @Transactional(readOnly = true)
@@ -67,12 +74,10 @@ public class CurrencyServiceImpl implements CurrencyService {
         return CurrencyResponseDTO.fromEntity(currency);
     }
 
-    // ─── Commands ──────────────────────────────────────────────
 
     @Override
     @Transactional
-    public CurrencyResponseDTO create(CurrencyRequestDTO dto,
-                                      String adminIp) {
+    public CurrencyResponseDTO create(CurrencyRequestDTO dto, String adminIp) {
         String code = dto.getCode().toUpperCase();
 
         if (currencyRepository.existsByCode(code))
@@ -88,6 +93,10 @@ public class CurrencyServiceImpl implements CurrencyService {
                 .build();
 
         Currency saved = currencyRepository.save(currency);
+
+        if (saved.getExchangeRate() != null && !"USD".equals(saved.getCode())) {
+            updateAllRatesForCurrency(saved, saved.getExchangeRate());
+        }
 
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
@@ -105,9 +114,7 @@ public class CurrencyServiceImpl implements CurrencyService {
 
     @Override
     @Transactional
-    public CurrencyResponseDTO update(Long id,
-                                      CurrencyRequestDTO dto,
-                                      String adminIp) {
+    public CurrencyResponseDTO update(Long id, CurrencyRequestDTO dto, String adminIp) {
         Currency currency = findOrThrow(id);
         String newCode = dto.getCode().toUpperCase();
 
@@ -128,6 +135,10 @@ public class CurrencyServiceImpl implements CurrencyService {
             currency.setActive(dto.getActive());
 
         Currency updated = currencyRepository.save(currency);
+
+        if (updated.getExchangeRate() != null && !"USD".equals(updated.getCode())) {
+            updateAllRatesForCurrency(updated, updated.getExchangeRate());
+        }
 
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
@@ -181,11 +192,69 @@ public class CurrencyServiceImpl implements CurrencyService {
         );
     }
 
-    // ─── Helpers ───────────────────────────────────────────────
 
     private Currency findOrThrow(Long id) {
         return currencyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Currency not found with id: " + id));
+    }
+
+    private void updateAllRatesForCurrency(Currency fromCurrency,
+                                           BigDecimal newRateToUsd) {
+
+        List<Currency> allCurrencies = currencyRepository.findByActive(true);
+
+        for (Currency otherCurrency : allCurrencies) {
+
+            if (otherCurrency.getId().equals(fromCurrency.getId())) continue;
+
+            BigDecimal otherToUsd = otherCurrency.getExchangeRate();
+            if (otherToUsd == null || otherToUsd.compareTo(BigDecimal.ZERO) == 0)
+                continue;
+
+            // ── Sens 1 : fromCurrency → otherCurrency ──────────────
+            // FROM → X  =  newRateToUsd  ×  (1 / X → USD)
+            BigDecimal fromToOther;
+            if ("USD".equals(otherCurrency.getCode())) {
+                fromToOther = newRateToUsd;
+            } else {
+                fromToOther = newRateToUsd
+                        .multiply(BigDecimal.ONE.divide(otherToUsd, 8, RoundingMode.HALF_UP))
+                        .setScale(8, RoundingMode.HALF_UP);
+            }
+
+            CurrencyRate rowFrom = currencyRateRepository
+                    .findByFromCurrencyAndToCurrency(fromCurrency, otherCurrency)
+                    .orElse(CurrencyRate.builder()
+                            .fromCurrency(fromCurrency)
+                            .toCurrency(otherCurrency)
+                            .build());
+            rowFrom.setRate(fromToOther);
+            rowFrom.setSource(RateSource.MANUAL);
+            rowFrom.setAppliedAt(LocalDateTime.now());
+            currencyRateRepository.save(rowFrom);
+
+            // ── Sens 2 : otherCurrency → fromCurrency ──────────────
+            // X → FROM  =  otherToUsd  ×  (1 / newRateToUsd)
+            BigDecimal otherToFrom;
+            if ("USD".equals(otherCurrency.getCode())) {
+                otherToFrom = BigDecimal.ONE.divide(newRateToUsd, 8, RoundingMode.HALF_UP);
+            } else {
+                otherToFrom = otherToUsd
+                        .multiply(BigDecimal.ONE.divide(newRateToUsd, 8, RoundingMode.HALF_UP))
+                        .setScale(8, RoundingMode.HALF_UP);
+            }
+
+            CurrencyRate rowOther = currencyRateRepository
+                    .findByFromCurrencyAndToCurrency(otherCurrency, fromCurrency)
+                    .orElse(CurrencyRate.builder()
+                            .fromCurrency(otherCurrency)
+                            .toCurrency(fromCurrency)
+                            .build());
+            rowOther.setRate(otherToFrom);
+            rowOther.setSource(RateSource.MANUAL);
+            rowOther.setAppliedAt(LocalDateTime.now());
+            currencyRateRepository.save(rowOther);
+        }
     }
 }

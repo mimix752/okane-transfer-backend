@@ -42,4 +42,8 @@ public interface CurrencyRateRepository extends JpaRepository<CurrencyRate, Long
         SELECT DISTINCT r.toCurrency FROM CurrencyRate r WHERE r.active = true
     """)
     List<String> findAllActiveCurrencies();
+
+    Optional<CurrencyRate> findByFromCurrencyAndToCurrency(
+            Currency fromCurrency,
+            Currency toCurrency);
 }

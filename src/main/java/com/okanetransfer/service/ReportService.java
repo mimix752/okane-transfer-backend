@@ -21,9 +21,6 @@ public interface ReportService {
                                         LocalDate to,
                                         String status);
 
-    // Volume journalier + mensuel pour UN corridor
-    CorridorStatsResponseDTO getCorridorStats(Long corridorId);
-
-    // Volume journalier + mensuel pour TOUS les corridors actifs
-    List<CorridorStatsResponseDTO> getAllCorridorStats();
+    CorridorStatsResponseDTO getCorridorStats(Long corridorId, LocalDate from, LocalDate to);
+    List<CorridorStatsResponseDTO> getAllCorridorStats(LocalDate from, LocalDate to);
 }

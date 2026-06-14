@@ -92,16 +92,13 @@ public class ReportController {
     @GetMapping("/by-corridor/{corridorId}")
     public ResponseEntity<ApiResponse<CorridorStatsResponseDTO>>
     getCorridorStats(
-            @Parameter(
-                    description = "ID du corridor",
-                    example     = "1")
-            @PathVariable Long corridorId) {
-
-        CorridorStatsResponseDTO stats =
-                reportService.getCorridorStats(corridorId);
+            @PathVariable Long corridorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 
         return ResponseEntity.ok(ApiResponse.success(
-                "Corridor stats retrieved", stats));
+                "Corridor stats retrieved",
+                reportService.getCorridorStats(corridorId, from, to)));
     }
 
     @Operation(
@@ -112,13 +109,13 @@ public class ReportController {
     )
     @GetMapping("/by-corridor")
     public ResponseEntity<ApiResponse<List<CorridorStatsResponseDTO>>>
-    getAllCorridorStats() {
-
-        List<CorridorStatsResponseDTO> stats =
-                reportService.getAllCorridorStats();
+    getAllCorridorStats(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 
         return ResponseEntity.ok(ApiResponse.success(
-                "All corridor stats retrieved", stats));
+                "All corridor stats retrieved",
+                reportService.getAllCorridorStats(from, to)));
     }
 
 

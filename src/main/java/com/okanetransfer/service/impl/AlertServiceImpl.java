@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 @Service
 public class AlertServiceImpl implements AlertService {
 
-    // Valeurs par défaut si aucun seuil en base
     private static final BigDecimal DEFAULT_VOLUME_THRESHOLD =
             BigDecimal.valueOf(500_000);
     private static final BigDecimal DEFAULT_BALANCE_THRESHOLD =
@@ -261,7 +260,6 @@ public class AlertServiceImpl implements AlertService {
                 AlertType.TAUX_CHANGE_ANOMALIE,
                 DEFAULT_RATE_THRESHOLD);
 
-        // Ne créer l'alerte que si la variation dépasse le seuil
         if (variationPercent.abs().compareTo(threshold) < 0)
             return;
 
@@ -274,11 +272,11 @@ public class AlertServiceImpl implements AlertService {
             AlertLevel.CRITIQUE,
             AlertType.TAUX_CHANGE_ANOMALIE,
             "Variation anormale du taux "
-            + currency.getCode() + "/MAD : "
+            + currency.getCode() + "/USD : "
             + oldRate + " → " + newRate
             + " (" + sign + variationPercent + "%). "
             + "Source: " + source.name(),
-            currency.getCode() + "/MAD",
+            currency.getCode() + "/USD",
             "CURRENCY",
             currency.getId()
         );
@@ -303,7 +301,7 @@ public class AlertServiceImpl implements AlertService {
         return thresholdRepository
                 .findByAlertType(type)
                 .map(AlertThreshold::isEnabled)
-                .orElse(true); // activé par défaut
+                .orElse(true);
     }
 
     private void createAlert(AlertLevel level,

@@ -3,8 +3,10 @@ package com.okanetransfer.service.impl;
 import com.okanetransfer.dto.request.RoleUpdateRequestDTO;
 import com.okanetransfer.dto.request.UserRequestDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
+import com.okanetransfer.entity.Agent;
 import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Role;
+import com.okanetransfer.repository.AgentRepository;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.AdminUserService;
 import com.okanetransfer.service.AuditService;
@@ -32,13 +34,20 @@ public class AdminUserServiceImpl implements AdminUserService {
     private PasswordEncoder passwordEncoder;
 
 
+    @Autowired
+    private AgentRepository agentRepository;
+
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponseDTO> getAllUsers(Role role, Boolean active,
-                                             Pageable pageable) {
+    public Page<UserResponseDTO> getAllUsers(Role role, Boolean active, Pageable pageable) {
+
+        if (role == Role.AGENT) {
+            Page<Agent> agents = agentRepository.findAll(pageable);
+            return agents.map(this::agentToDTO);
+        }
+
         if (role != null && active != null)
-            return userRepository.findByRoleAndEnabled(role, active, pageable)
-                    .map(this::toDTO);
+            return userRepository.findByRoleAndEnabled(role, active, pageable).map(this::toDTO);
         if (role != null)
             return userRepository.findByRole(role, pageable).map(this::toDTO);
         if (active != null)
@@ -173,5 +182,22 @@ public class AdminUserServiceImpl implements AdminUserService {
         return dto;
     }
 
+    private UserResponseDTO agentToDTO(Agent agent) {
+        UserResponseDTO dto = new UserResponseDTO();
+        dto.setId(agent.getId());
+        dto.setUsername(agent.getUsername());
+        dto.setEmail(agent.getEmail());
+        dto.setPhone(agent.getPhone());
+        dto.setRole(agent.getRole());
+        dto.setActive(agent.isEnabled());
+        dto.setCreatedAt(agent.getCreatedAt());
+
+        if (agent.getAgency() != null) {
+            dto.setAgencyId(agent.getAgency().getId());
+            dto.setAgencyName(agent.getAgency().getName());
+        }
+
+        return dto;
+    }
 }
 
