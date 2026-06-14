@@ -132,7 +132,7 @@ public class FeeGridController {
                     + "without creating a real transfer. "
                     + "Useful for validation before transfer creation."
     )
-    @PostMapping("/simulate")
+    @GetMapping("/simulate")
     public ResponseEntity<ApiResponse<FeeGridResponseDTO>>
     simulate(
             @Parameter(description = "Corridor ID")
