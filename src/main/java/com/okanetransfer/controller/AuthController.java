@@ -5,6 +5,7 @@ import com.okanetransfer.dto.request.RegisterRequestDTO;
 import com.okanetransfer.dto.request.VerifyOtpRequestDTO;
 import com.okanetransfer.dto.response.AuthResponseDTO;
 import com.okanetransfer.service.AuthService;
+import com.okanetransfer.service.EmbeddingService;
 import com.okanetransfer.util.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,8 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
-
+    @Autowired
+    EmbeddingService embeddingService;
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponseDTO>> register(
             @Valid @RequestBody RegisterRequestDTO dto) {
@@ -38,13 +40,13 @@ public class AuthController {
             @Valid @RequestBody LoginRequestDTO dto) {
 
         AuthResponseDTO response = authService.login(dto);
-
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success(
                         "Login successful",
                         response
-                ));
+                )
+                );
     }
     @PostMapping("/verify-otp")
     public ResponseEntity<ApiResponse<AuthResponseDTO>> verifyOtp(

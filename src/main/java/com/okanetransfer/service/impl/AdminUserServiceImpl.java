@@ -3,8 +3,10 @@ package com.okanetransfer.service.impl;
 import com.okanetransfer.dto.request.RoleUpdateRequestDTO;
 import com.okanetransfer.dto.request.UserRequestDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
+import com.okanetransfer.entity.Agent;
 import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Role;
+import com.okanetransfer.repository.AgentRepository;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.AdminUserService;
 import com.okanetransfer.service.AuditService;
@@ -16,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 public class AdminUserServiceImpl implements AdminUserService {
@@ -29,15 +33,21 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // ─── Queries ───────────────────────────────────────────────
+
+    @Autowired
+    private AgentRepository agentRepository;
 
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponseDTO> getAllUsers(Role role, Boolean active,
-                                             Pageable pageable) {
+    public Page<UserResponseDTO> getAllUsers(Role role, Boolean active, Pageable pageable) {
+
+        if (role == Role.AGENT) {
+            Page<Agent> agents = agentRepository.findAll(pageable);
+            return agents.map(this::agentToDTO);
+        }
+
         if (role != null && active != null)
-            return userRepository.findByRoleAndEnabled(role, active, pageable)
-                    .map(this::toDTO);
+            return userRepository.findByRoleAndEnabled(role, active, pageable).map(this::toDTO);
         if (role != null)
             return userRepository.findByRole(role, pageable).map(this::toDTO);
         if (active != null)
@@ -52,7 +62,6 @@ public class AdminUserServiceImpl implements AdminUserService {
         return toDTO(findOrThrow(id));
     }
 
-    // ─── Commands ──────────────────────────────────────────────
 
     @Transactional
     @Override
@@ -72,9 +81,8 @@ public class AdminUserServiceImpl implements AdminUserService {
                 "CREATE_USER",
                 "User",
                 saved.getId(),
-                "email=" + saved.getEmail()
-                        + " | role=" + saved.getRole()
-                        + " | ip=" + adminIp
+                LocalDateTime.now()+" - Utilisateur créé avec email : " + saved.getEmail()
+                        + " dont le role est : " + saved.getRole()
         );
 
         return toDTO(saved);
@@ -102,13 +110,13 @@ public class AdminUserServiceImpl implements AdminUserService {
                 "UPDATE_USER",
                 "User",
                 id,
-                "old=[username=" + oldUsername
-                        + ", email=" + oldEmail
-                        + ", role=" + oldRole + "]"
-                        + " | new=[username=" + saved.getUsername()
-                        + ", email=" + saved.getEmail()
-                        + ", role=" + saved.getRole() + "]"
-                        + " | ip=" + adminIp
+                LocalDateTime.now()+" - Modification de L'utilisateur "+ saved.getId() + " old infos : "
+                        + "username : " +  oldUsername
+                        + ", email : " + oldEmail
+                        + ", role : " + oldRole
+                        + " | New infos : username :" + saved.getUsername()
+                        + ", email : " + saved.getEmail()
+                        + ", role : " + saved.getRole()
         );
 
         return toDTO(saved);
@@ -123,14 +131,16 @@ public class AdminUserServiceImpl implements AdminUserService {
         user.setEnabled(!previous);
         userRepository.save(user);
 
+        String oldStatus = previous ? "Désactivé" : "Activé";
+        String newStatus = !previous ? "Désactivé" : "Activé";
+
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 previous ? "DISABLE_USER" : "ENABLE_USER",
                 "User",
                 id,
-                "old=" + previous
-                        + " | new=" + !previous
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de status de l'utilisateur old : " + oldStatus
+                        + " -> new : " + newStatus
         );
     }
 
@@ -148,13 +158,11 @@ public class AdminUserServiceImpl implements AdminUserService {
                 "UPDATE_ROLE",
                 "User",
                 id,
-                "old=" + oldRole.name()
-                        + " | new=" + dto.getRole().name()
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de role de L#utilisateur old=" + oldRole.name()
+                        + " -> new=" + dto.getRole().name()
         );
     }
 
-    // ─── Helpers ───────────────────────────────────────────────
 
     private User findOrThrow(Long id) {
         return userRepository.findById(id)
@@ -174,5 +182,22 @@ public class AdminUserServiceImpl implements AdminUserService {
         return dto;
     }
 
+    private UserResponseDTO agentToDTO(Agent agent) {
+        UserResponseDTO dto = new UserResponseDTO();
+        dto.setId(agent.getId());
+        dto.setUsername(agent.getUsername());
+        dto.setEmail(agent.getEmail());
+        dto.setPhone(agent.getPhone());
+        dto.setRole(agent.getRole());
+        dto.setActive(agent.isEnabled());
+        dto.setCreatedAt(agent.getCreatedAt());
+
+        if (agent.getAgency() != null) {
+            dto.setAgencyId(agent.getAgency().getId());
+            dto.setAgencyName(agent.getAgency().getName());
+        }
+
+        return dto;
+    }
 }
 

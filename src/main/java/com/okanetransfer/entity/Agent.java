@@ -70,23 +70,11 @@ public class Agent extends User {
         this.updatedAt = updatedAt;
     }
 
-    // ─── Constructeurs ───────────────────────────────────────
-    // public Agent() {}
-    // public Agent(Agency agency, boolean active, LocalDateTime createdAt, LocalDateTime updatedAt) { ... }
-
-    // ─── Getters / Setters ───────────────────────────────────
-    // getAgency() / setAgency(Agency agency)
-    // isActive() / setActive(boolean active)
-    // getCreatedAt() / setCreatedAt(LocalDateTime createdAt)
-    // getUpdatedAt() / setUpdatedAt(LocalDateTime updatedAt)
-
-    @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
-    @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }

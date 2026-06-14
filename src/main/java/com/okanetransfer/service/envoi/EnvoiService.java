@@ -2,7 +2,10 @@ package com.okanetransfer.service.envoi;
 
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
-import com.okanetransfer.entity.*;
+import com.okanetransfer.entity.Agent;
+import com.okanetransfer.entity.Corridor;
+import com.okanetransfer.entity.Currency;
+import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.AgentRepository;
@@ -28,49 +31,24 @@ import java.time.LocalDateTime;
 @Service
 public class EnvoiService {
 
-    @Autowired
-    private TransferRepository transferRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private AgentRepository agentRepository;
-
-    @Autowired
-    private CorridorRepository corridorRepository;
-
-    @Autowired
-    private FeeGridService feeGridService;
-
-    @Autowired
-    private TransferCodeService transferCodeService;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private AgencyService agencyService;
-
-    @Autowired
-    private KycAmlValidationService kycAmlValidationService;
-
-    @Autowired
-    private CurrencyConversionService currencyConversionService;
-
-    @Autowired
-    private AgentAuditService agentAuditService;
-
-    @Autowired
-    private ReceiptPrintingService receiptPrintingService;
-
+    @Autowired private TransferRepository transferRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private AgentRepository agentRepository;
+    @Autowired private CorridorRepository corridorRepository;
+    @Autowired private FeeGridService feeGridService;
+    @Autowired private TransferCodeService transferCodeService;
+    @Autowired private NotificationService notificationService;
+    @Autowired private AgencyService agencyService;
+    @Autowired private KycAmlValidationService kycAmlValidationService;
+    @Autowired private CurrencyConversionService currencyConversionService;
+    @Autowired private AgentAuditService agentAuditService;
+    @Autowired private ReceiptPrintingService receiptPrintingService;
     @Autowired private CurrencyRepository currencyRepository;
-    @Autowired
-    private CashRegisterService cashRegisterService;
+    @Autowired private CashRegisterService cashRegisterService;
 
     @Transactional
     public EnvoiResponseDTO createTransfer(EnvoiRequestDTO dto, Long agentId) {
 
-        // 1. Récupérer l'agent directement depuis AgentRepository
         Agent agent = agentRepository.findByUserId(agentId)
                 .orElseThrow(() -> new IllegalArgumentException("User is not an agent"));
 
@@ -91,7 +69,6 @@ public class EnvoiService {
         BigDecimal fees = feeGridService.calculateFee(dto.getCorridorId(), dto.getAmount());
         BigDecimal totalAmount = dto.getAmount().add(fees);
 
-        // 7. Conversion de devise si nécessaire
         Currency sourceCurrency = currencyRepository.findById(dto.getCurrencyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Currency not found"));
         Currency targetCurrency = corridor.getDestinationCurrency();
@@ -101,7 +78,6 @@ public class EnvoiService {
                     dto.getAmount(), sourceCurrency.getCode(), targetCurrency.getCode());
         }
 
-        // 8. Vérifier le solde de l'agence
         Long agencyId = agent.getAgency().getId();
         agencyService.checkAndDeductBalance(agencyId, totalAmount);
 
@@ -126,7 +102,7 @@ public class EnvoiService {
         Transfer savedTransfer = transferRepository.save(transfer);
 
         try { cashRegisterService.crediter(agentId, totalAmount.negate(), "ENVOI", transferCode); } catch (Exception ignored) {}
-        try { agentAuditService.logTransferCreation(savedTransfer.getId(), savedTransfer.getTransferCode(), savedTransfer.getRecipientName(), dto.getAmount().toString(), sourceCurrency); } catch (Exception ignored) {}
+        try { agentAuditService.logTransferCreation(savedTransfer.getId(), savedTransfer.getTransferCode(), savedTransfer.getRecipientName(), dto.getAmount().toString(), sourceCurrency.getCode()); } catch (Exception ignored) {}
         try { notificationService.sendReceiptBySMS(transfer, fees); } catch (Exception ignored) {}
         try { notificationService.sendReceiptByEmail(transfer, fees, agent.getEmail()); } catch (Exception ignored) {}
         try {

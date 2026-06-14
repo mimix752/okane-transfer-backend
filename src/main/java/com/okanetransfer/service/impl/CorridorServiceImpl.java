@@ -92,10 +92,6 @@ public class CorridorServiceImpl implements CorridorService {
         String src  = dto.getSourceCountry().toUpperCase();
         String dest = dto.getDestinationCountry().toUpperCase();
 
-        if (src.equals(dest))
-            throw new IllegalArgumentException(
-                    "Source and destination countries must be different");
-
         if (corridorRepository
                 .existsBySourceCountryAndDestinationCountry(src, dest))
             throw new IllegalArgumentException(
@@ -121,10 +117,9 @@ public class CorridorServiceImpl implements CorridorService {
                 "CREATE_CORRIDOR",
                 "Corridor",
                 saved.getId(),
-                "corridor=" + src + "→" + dest
-                        + " | srcCurrency=" + srcCurrency.getCode()
-                        + " | destCurrency=" + destCurrency.getCode()
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Creqtion de corridor=" + src + "→" + dest
+                        + " | Devise source : " + srcCurrency.getCode()
+                        + " | Devise destination : " + destCurrency.getCode()
         );
 
         return CorridorResponseDTO.fromEntity(saved);
@@ -138,10 +133,6 @@ public class CorridorServiceImpl implements CorridorService {
         Corridor corridor = findOrThrow(id);
         String src  = dto.getSourceCountry().toUpperCase();
         String dest = dto.getDestinationCountry().toUpperCase();
-
-        if (src.equals(dest))
-            throw new IllegalArgumentException(
-                    "Source and destination countries must be different");
 
         if (corridorRepository
                 .existsBySourceCountryAndDestinationCountryAndIdNot(
@@ -173,13 +164,12 @@ public class CorridorServiceImpl implements CorridorService {
                 "UPDATE_CORRIDOR",
                 "Corridor",
                 id,
-                "old=[corridor=" + oldCorridor
-                        + ", srcCurrency=" + oldSrcCurrency
-                        + ", destCurrency=" + oldDestCurrency + "]"
-                        + " | new=[corridor=" + src + "→" + dest
-                        + ", srcCurrency=" + newSrcCurrency.getCode()
-                        + ", destCurrency=" + newDestCurrency.getCode() + "]"
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de corridor " + oldCorridor
+                        + ", oldSrcCurrency=" + oldSrcCurrency
+                        + ", oldDestCurrency=" + oldDestCurrency
+                        + " -> new corridor : " + src + "→" + dest
+                        + ", newSrcCurrency=" + newSrcCurrency.getCode()
+                        + ", newDestCurrency=" + newDestCurrency.getCode()
         );
 
         return CorridorResponseDTO.fromEntity(updated);
@@ -193,20 +183,21 @@ public class CorridorServiceImpl implements CorridorService {
         corridor.setActive(!previous);
         corridorRepository.save(corridor);
 
+        String corridorOldStatus = previous ? "Désactivé" : "Activé";
+        String corridorNewStatus = !previous ? "Désactivé" : "Activé";
+
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 previous ? "DEACTIVATE_CORRIDOR" : "ACTIVATE_CORRIDOR",
                 "Corridor",
                 id,
-                "old=" + previous
-                        + " | new=" + !previous
-                        + " | corridor=" + corridor.getSourceCountry()
+                LocalDateTime.now() + " - Modification de status de " + corridorOldStatus
+                        + " à " + corridorNewStatus
+                        + " pour le corridor " + corridor.getSourceCountry()
                         + "→" + corridor.getDestinationCountry()
-                        + " | ip=" + adminIp
         );
     }
 
-    // ─── Helpers ───────────────────────────────────────────────
 
     private Corridor findOrThrow(Long id) {
         return corridorRepository.findById(id)
@@ -334,13 +325,16 @@ public class CorridorServiceImpl implements CorridorService {
                 .build();
     }
 
-    // Vérifie si un transfert appartient à ce corridor
-// en comparant les devises source/destination
+
     private boolean matchesCorridor(Transfer t, Corridor corridor) {
         if (t.getCurrency() == null) return false;
-        String transferCurrency = t.getCurrency().getName();
-        String corridorFromCode =
-                corridor.getSourceCurrency().getCode();
-        return transferCurrency.equals(corridorFromCode);
+        String transferCurrencySrc = t.getCurrency().getCode();
+        String corridorCurrencySrc = corridor.getSourceCurrency().getCode();
+
+        String transferCurrencyDest = t.getTargetCurrency().getCode();
+        String corridorCurrencyDest = corridor.getDestinationCurrency().getCode();
+
+
+        return (transferCurrencySrc.equals(corridorCurrencySrc)) && (transferCurrencyDest.equals(corridorCurrencyDest));
     }
 }

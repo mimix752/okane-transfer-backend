@@ -14,9 +14,12 @@ import com.okanetransfer.entity.FeeGrid;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.FeeGridRepository;
+import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.FeeGridExportService;
+import com.okanetransfer.util.SecurityUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,8 +39,12 @@ public class FeeGridExportServiceImpl
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    private final FeeGridRepository  feeGridRepository;
-    private final CorridorRepository corridorRepository;
+    @Autowired
+    private FeeGridRepository  feeGridRepository;
+    @Autowired
+    private CorridorRepository corridorRepository;
+    @Autowired
+    private AuditService auditService;
 
     public FeeGridExportServiceImpl(
             FeeGridRepository feeGridRepository,
@@ -47,11 +54,11 @@ public class FeeGridExportServiceImpl
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ByteArrayOutputStream exportPdf(Long corridorId) {
         Corridor corridor = findCorridorOrThrow(corridorId);
         List<FeeGrid> grids =
-                feeGridRepository.findByCorridor_IdAndActive(
+                feeGridRepository.findByCorridor_IdAndActiveOrderByMinAmountAsc(
                         corridorId, true);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -76,12 +83,22 @@ public class FeeGridExportServiceImpl
                     "PDF generation failed: " + e.getMessage(), e);
         }
 
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "EXPORT_FEE_GRID_PDF",
+                "Corridor",
+                corridorId,
+                LocalDateTime.now() + " - Export PDF de la grille tarifaire du corridor "
+                        + corridor.getSourceCountry() + " → "
+                        + corridor.getDestinationCountry()
+        );
+
         return baos;
     }
 
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ByteArrayOutputStream exportAllPdf() {
         List<Corridor> corridors =
                 corridorRepository.findByActive(true);
@@ -112,7 +129,7 @@ public class FeeGridExportServiceImpl
 
             for (Corridor corridor : corridors) {
                 List<FeeGrid> grids =
-                        feeGridRepository.findByCorridor_IdAndActive(
+                        feeGridRepository.findByCorridor_IdAndActiveOrderByMinAmountAsc(
                                 corridor.getId(), true);
 
                 if (grids.isEmpty()) continue;
@@ -131,15 +148,23 @@ public class FeeGridExportServiceImpl
                     "PDF generation failed: " + e.getMessage(), e);
         }
 
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "EXPORT_ALL_FEE_GRIDS_PDF",
+                "Corridor",
+                null,
+                LocalDateTime.now() + " - Export PDF de toutes les grilles tarifaires"
+        );
+
         return baos;
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ByteArrayOutputStream exportCsv(Long corridorId) {
         Corridor corridor = findCorridorOrThrow(corridorId);
         List<FeeGrid> grids =
-                feeGridRepository.findByCorridor_IdAndActive(
+                feeGridRepository.findByCorridor_IdAndActiveOrderByMinAmountAsc(
                         corridorId, true);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -150,9 +175,10 @@ public class FeeGridExportServiceImpl
             writer.write("\uFEFF");
 
             CSVPrinter printer = new CSVPrinter(writer,
-                    CSVFormat.DEFAULT
-                            .withHeader(getCsvHeaders())
-                            .withDelimiter(';'));
+                    CSVFormat.DEFAULT.builder()
+                            .setHeader(getCsvHeaders())
+                            .setDelimiter(';')
+                            .build());
 
             String corridorLabel = corridor.getSourceCountry()
                     + " → " + corridor.getDestinationCountry();
@@ -178,11 +204,21 @@ public class FeeGridExportServiceImpl
                     "CSV generation failed: " + e.getMessage(), e);
         }
 
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "EXPORT_FEE_GRID_CSV",
+                "Corridor",
+                corridorId,
+                LocalDateTime.now() + " - Export CSV de la grille tarifaire du corridor "
+                        + corridor.getSourceCountry() + " → "
+                        + corridor.getDestinationCountry()
+        );
+
         return baos;
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ByteArrayOutputStream exportAllCsv() {
         List<Corridor> corridors =
                 corridorRepository.findByActive(true);
@@ -195,13 +231,14 @@ public class FeeGridExportServiceImpl
             writer.write("\uFEFF");
 
             CSVPrinter printer = new CSVPrinter(writer,
-                    CSVFormat.DEFAULT
-                            .withHeader(getCsvHeaders())
-                            .withDelimiter(';'));
+                    CSVFormat.DEFAULT.builder()
+                            .setHeader(getCsvHeaders())
+                            .setDelimiter(';')
+                            .build());
 
             for (Corridor corridor : corridors) {
                 List<FeeGrid> grids =
-                        feeGridRepository.findByCorridor_IdAndActive(
+                        feeGridRepository.findByCorridor_IdAndActiveOrderByMinAmountAsc(
                                 corridor.getId(), true);
 
                 if (grids.isEmpty()) continue;
@@ -235,6 +272,14 @@ public class FeeGridExportServiceImpl
             throw new RuntimeException(
                     "CSV generation failed: " + e.getMessage(), e);
         }
+
+        auditService.log(
+                SecurityUtils.getCurrentUsername(),
+                "EXPORT_ALL_FEE_GRIDS_CSV",
+                "Corridor",
+                null,
+                LocalDateTime.now() + " - Export CSV de toutes les grilles tarifaires"
+        );
 
         return baos;
     }
@@ -393,10 +438,10 @@ public class FeeGridExportServiceImpl
     }
 
     private String formatMax(BigDecimal maxAmount) {
-        if (maxAmount == null) return "∞";
+        if (maxAmount == null) return "Illimite";
         if (maxAmount.compareTo(
                 BigDecimal.valueOf(9_999_999)) >= 0) {
-            return "∞";
+            return "Illimite";
         }
         return formatAmount(maxAmount);
     }

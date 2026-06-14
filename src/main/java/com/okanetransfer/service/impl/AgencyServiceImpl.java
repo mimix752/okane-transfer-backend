@@ -39,8 +39,6 @@ public class AgencyServiceImpl implements AgencyService {
     @Autowired private AuditService auditService;
     @Autowired private TransferRepository transferRepository;
 
-    // ─── Queries ───────────────────────────────────────────────
-
     @Transactional(readOnly = true)
     @Override
     public List<AgencyResponseDTO> getAllAgencies(String country, Boolean active) {
@@ -63,8 +61,6 @@ public class AgencyServiceImpl implements AgencyService {
     public AgencyResponseDTO getById(Long id) {
         return toDTO(findOrThrow(id));
     }
-
-    // ─── Commands ──────────────────────────────────────────────
 
     @Transactional
     @Override
@@ -98,8 +94,8 @@ public class AgencyServiceImpl implements AgencyService {
 
         Agency saved = agencyRepository.save(agency);
         auditService.log(SecurityUtils.getCurrentUsername(), "UPDATE_AGENCY", "Agency", id,
-                "old name=" + oldName + ", old country=" + oldCountry + ", old dailyLimit=" + oldDailyLimit
-                + " -> name=" + saved.getName() + ", country=" + saved.getCountry() + ", dailyLimit=" + saved.getDailyLimit());
+                "old=[name=" + oldName + ", country=" + oldCountry + ", dailyLimit=" + oldDailyLimit + "]"
+                + " -> new=[name=" + saved.getName() + ", country=" + saved.getCountry() + ", dailyLimit=" + saved.getDailyLimit() + "]");
         return toDTO(saved);
     }
 
@@ -112,7 +108,7 @@ public class AgencyServiceImpl implements AgencyService {
         agencyRepository.save(agency);
         auditService.log(SecurityUtils.getCurrentUsername(),
                 previous ? "DISABLE_AGENCY" : "ENABLE_AGENCY", "Agency", id,
-                previous + " -> " + !previous + " | ip=" + adminIp);
+                previous + " -> " + !previous);
     }
 
     @Transactional
@@ -148,7 +144,7 @@ public class AgencyServiceImpl implements AgencyService {
         }
 
         auditService.log(SecurityUtils.getCurrentUsername(), "ADD_AGENT", "Agency", agencyId,
-                "userId=" + userId + " | username=" + user.getUsername() + " | ip=" + adminIp);
+                "userId=" + userId + " | username=" + user.getUsername());
     }
 
     @Transactional
@@ -163,10 +159,8 @@ public class AgencyServiceImpl implements AgencyService {
         agent.setActive(false);
         agentRepository.save(agent);
         auditService.log(SecurityUtils.getCurrentUsername(), "REMOVE_AGENT", "Agency", agencyId,
-                "userId=" + userId + " | username=" + username + " | ip=" + adminIp);
+                "userId=" + userId + " | username=" + username);
     }
-
-    // ─── Performance ──────────────────────────────────────────
 
     @Transactional(readOnly = true)
     @Override
@@ -194,16 +188,10 @@ public class AgencyServiceImpl implements AgencyService {
                 .filter(t -> t.getCreatedAt() != null && !t.getCreatedAt().isBefore(startOfDay))
                 .collect(Collectors.toList());
 
-        BigDecimal dailyVolume = dailyTransfers.stream().map(Transfer::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal monthlyVolume = monthlyTransfers.stream().map(Transfer::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal dailyFees = dailyTransfers.stream()
-                .map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal monthlyFees = monthlyTransfers.stream()
-                .map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal dailyVolume = dailyTransfers.stream().map(Transfer::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal monthlyVolume = monthlyTransfers.stream().map(Transfer::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal dailyFees = dailyTransfers.stream().map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal monthlyFees = monthlyTransfers.stream().map(t -> t.getFees() != null ? t.getFees() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal usedPercent = BigDecimal.ZERO;
         if (agency.getDailyLimit() != null && agency.getDailyLimit().compareTo(BigDecimal.ZERO) > 0) {
@@ -211,11 +199,9 @@ public class AgencyServiceImpl implements AgencyService {
                     .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
         }
 
-        long paidCount = monthlyTransfers.stream()
-                .filter(t -> TransferStatus.PAID == t.getStatus()).count();
+        long paidCount = monthlyTransfers.stream().filter(t -> TransferStatus.PAID == t.getStatus()).count();
         BigDecimal successRate = monthlyTransfers.isEmpty() ? BigDecimal.ZERO
-                : BigDecimal.valueOf(paidCount)
-                .divide(BigDecimal.valueOf(monthlyTransfers.size()), 4, RoundingMode.HALF_UP)
+                : BigDecimal.valueOf(paidCount).divide(BigDecimal.valueOf(monthlyTransfers.size()), 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
 
         return AgencyPerformanceResponseDTO.builder()
@@ -230,8 +216,6 @@ public class AgencyServiceImpl implements AgencyService {
                 .dailyLimitUsedPercent(usedPercent).successRate(successRate)
                 .reportDate(LocalDate.now()).build();
     }
-
-    // ─── Balance ──────────────────────────────────────────────
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Override
@@ -254,8 +238,6 @@ public class AgencyServiceImpl implements AgencyService {
         agency.setCurrentBalance(agency.getCurrentBalance().add(amount));
         agencyRepository.save(agency);
     }
-
-    // ─── Helpers ───────────────────────────────────────────────
 
     private Agency findOrThrow(Long id) {
         return agencyRepository.findById(id)

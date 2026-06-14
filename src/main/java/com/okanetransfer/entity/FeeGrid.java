@@ -20,9 +20,8 @@ public class FeeGrid {
             precision = 15, scale = 2)
     private BigDecimal minAmount;
 
-    @NotNull
     @Positive
-    @Column(name = "max_amount", nullable = false,
+    @Column(name = "max_amount", nullable = true ,
             precision = 15, scale = 2)
     private BigDecimal maxAmount;
 

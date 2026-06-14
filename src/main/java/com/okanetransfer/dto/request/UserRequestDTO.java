@@ -24,7 +24,6 @@ public class UserRequestDTO {
 
     private String cin;
 
-    @NotBlank
     private String country;
 
     @NotNull
@@ -75,6 +74,7 @@ public class UserRequestDTO {
     }
 
     public String getCountry() {
+
         return country;
     }
 

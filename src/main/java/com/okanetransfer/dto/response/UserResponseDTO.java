@@ -1,6 +1,7 @@
 package com.okanetransfer.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.okanetransfer.entity.Agent;
 import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Role;
 
@@ -20,6 +21,9 @@ public class UserResponseDTO {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
+    private Long   agencyId;
+    private String agencyName;
+
     public UserResponseDTO() {
     }
     public static UserResponseDTO fromEntity(User user) {
@@ -33,8 +37,19 @@ public class UserResponseDTO {
         dto.setRole(user.getRole());
         dto.setActive(user.isEnabled());
         dto.setCreatedAt(user.getCreatedAt());
+
+        if (user instanceof Agent) {
+            Agent agent = (Agent) user;
+            if (agent.getAgency() != null) {
+                dto.setAgencyId(agent.getAgency().getId());
+                dto.setAgencyName(agent.getAgency().getName());
+            }
+        }
+
         return dto;
     }
+
+
     public UserResponseDTO(Long id, String username, String email, String phone, String country, Role role, boolean active, LocalDateTime createdAt) {
         this.id = id;
         this.username = username;
@@ -45,6 +60,12 @@ public class UserResponseDTO {
         this.active = active;
         this.createdAt = createdAt;
     }
+
+    public Long getAgencyId() { return agencyId; }
+    public void setAgencyId(Long agencyId) { this.agencyId = agencyId; }
+
+    public String getAgencyName() { return agencyName; }
+    public void setAgencyName(String agencyName) { this.agencyName = agencyName; }
 
     public Long getId() {
         return id;

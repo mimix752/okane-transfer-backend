@@ -139,6 +139,20 @@
             <version>2.6.0</version>
         </dependency>
 
+        <!-- ===== AFRICA'S TALKING SMS ===== -->
+        <dependency>
+            <groupId>com.africastalking</groupId>
+            <artifactId>core</artifactId>
+            <version>3.4.5</version>
+        </dependency>
+
+        <!-- ===== TWILIO SMS ===== -->
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>10.1.0</version>
+        </dependency>
+
         <!-- ===== LOGGING ===== -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -152,6 +166,13 @@
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- ===== LANGUAGE DETECTION ===== -->
+        <dependency>
+            <groupId>com.github.pemistahl</groupId>
+            <artifactId>lingua</artifactId>
+            <version>1.2.2</version>
         </dependency>
 
         <!-- PDF : iText 8 Core -->

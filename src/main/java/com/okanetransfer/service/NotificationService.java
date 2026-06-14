@@ -1,6 +1,13 @@
 package com.okanetransfer.service;
 
 import com.okanetransfer.entity.Transfer;
+import com.twilio.Twilio;
+import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.type.PhoneNumber;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -8,74 +15,94 @@ import java.math.BigDecimal;
 @Service
 public class NotificationService {
 
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
+
+    @Value("${twilio.account-sid:}")
+    private String accountSid;
+
+    @Value("${twilio.auth-token:}")
+    private String authToken;
+
+    @Value("${twilio.messaging-service-sid:}")
+    private String messagingServiceSid;
+
+    private boolean twilioEnabled = false;
+
+    @PostConstruct
+    public void init() {
+        if (!accountSid.isBlank() && !authToken.isBlank()
+                && !accountSid.startsWith("<")) {
+            Twilio.init(accountSid, authToken);
+            twilioEnabled = true;
+            log.info("Twilio SMS initialized");
+        } else {
+            log.warn("Twilio not configured — SMS will be logged only");
+        }
+    }
+
     public void sendReceiptBySMS(Transfer transfer, BigDecimal fees) {
         String message = String.format(
                 "Okane Transfer - Code retrait: %s | Montant: %.2f | Frais: %.2f",
-                transfer.getTransferCode(),
-                transfer.getAmount(),
-                fees
-        );
-        // TODO: Intégrer API SMS (Twilio, AWS SNS, etc.)
+                transfer.getTransferCode(), transfer.getAmount(), fees);
+        sendSms(transfer.getRecipientPhone(), message);
     }
 
-    public void sendReceiptByEmail(Transfer transfer, BigDecimal fees, String recipientEmail) {
-        String subject = "Reçu de transfert d'argent - Code: " + transfer.getTransferCode();
-        String body = String.format(
-                "Bonjour,\n\n" +
-                        "Votre transfert a été enregistré avec succès.\n\n" +
-                        "Code de retrait: %s\n" +
-                        "Montant: %.2f %s\n" +
-                        "Frais: %.2f %s\n" +
-                        "Montant net: %.2f %s\n\n" +
-                        "Cordialement,\nOkane Transfer",
-                transfer.getTransferCode(),
-                transfer.getAmount(),
-                transfer.getCurrency(),
-                fees,
-                transfer.getCurrency(),
-                transfer.getAmount().subtract(fees),
-                transfer.getCurrency()
-        );
-        // TODO: Intégrer API Email (JavaMail, SendGrid, etc.)
-    }
-
-    public void printReceipt(String receipt) {
-        // TODO: Intégrer imprimante thermique
-    }
-    public void sendProfileUpdateNotification(String email, String username) {
+    public void sendMobileMoneyNotification(String mobileAccount, String operator,
+                                             BigDecimal amount, String transferCode) {
+        String safeAccount  = sanitize(mobileAccount);
+        String safeCode     = sanitize(transferCode);
+        String safeOperator = sanitize(operator);
         String message = String.format(
-                "Bonjour %s,\n\nVotre profil Okane Transfer a été mis à jour avec succès.\n\nCordialement,\nOkane Transfer",
-                username
-        );
-        // TODO: Intégrer API Email (JavaMail, SendGrid, etc.)
-        System.out.println("NOTIFICATION EMAIL [" + email + "]: " + message);
+                "[%s] Vous avez recu %.2f sur votre compte. Code: %s - Okane Transfer",
+                safeOperator, amount, safeCode);
+        sendSms(safeAccount, message);
+    }
+
+    public void sendStatusChangeNotification(String email, String username,
+                                              String transferCode, String newStatus) {
+        log.info("NOTIFICATION EMAIL [{}]: statut transfert {} -> {}", email, transferCode, newStatus);
+    }
+
+    public void sendProfileUpdateNotification(String email, String username) {
+        log.info("NOTIFICATION EMAIL [{}]: profil mis a jour pour {}", email, username);
     }
 
     public void sendAccountDeletionNotification(String email, String username) {
-        String message = String.format(
-                "Bonjour %s,\n\nVotre compte Okane Transfer a été supprimé conformément au RGPD.\n\nCordialement,\nOkane Transfer",
-                username
-        );
-        // TODO: Intégrer API Email
-        System.out.println("NOTIFICATION EMAIL [" + email + "]: " + message);
-    }
-    public void sendMobileMoneyNotification(String mobileAccount, String operator, java.math.BigDecimal amount, String transferCode) {
-        String safeAccount = mobileAccount != null ? mobileAccount.replaceAll("[\\r\\n]", "") : "";
-        String safeCode = transferCode != null ? transferCode.replaceAll("[\\r\\n]", "") : "";
-        String safeOperator = operator != null ? operator.replaceAll("[\\r\\n]", "") : "";
-        String message = String.format(
-                "[%s] Vous avez recu %.2f sur votre compte. Code: %s - Okane Transfer",
-                safeOperator, amount, safeCode
-        );
-        System.out.println("SMS MOBILE MONEY [" + safeAccount + "]: " + message);
+        log.info("NOTIFICATION EMAIL [{}]: compte supprime pour {}", email, username);
     }
 
-    public void sendStatusChangeNotification(String email, String username, String transferCode, String newStatus) {
-        String message = String.format(
-                "Bonjour %s,\n\nLe statut de votre transfert %s a changé : %s\n\nCordialement,\nOkane Transfer",
-                username, transferCode, newStatus
-        );
-        System.out.println("NOTIFICATION EMAIL [" + email + "]: " + message);
-        // TODO: Intégrer API Email (JavaMail, SendGrid, etc.)
+    public void sendReceiptByEmail(Transfer transfer, BigDecimal fees, String recipientEmail) {
+        log.info("NOTIFICATION EMAIL [{}]: recu transfert {}", recipientEmail, transfer.getTransferCode());
+    }
+
+    public void printReceipt(String receipt) {
+        // TODO: imprimante thermique
+    }
+
+    // ─── Envoi SMS via Twilio ─────────────────────────────────────────────────
+
+    private void sendSms(String to, String body) {
+        if (to == null || to.isBlank()) {
+            log.warn("SMS skipped: no phone number");
+            return;
+        }
+        if (twilioEnabled) {
+            try {
+                Message.creator(
+                        new PhoneNumber(to),
+                        messagingServiceSid,
+                        body
+                ).create();
+                log.info("SMS sent to {}", sanitize(to));
+            } catch (Exception e) {
+                log.error("SMS failed to {}: {}", sanitize(to), e.getMessage());
+            }
+        } else {
+            log.info("SMS [{}]: {}", sanitize(to), body);
+        }
+    }
+
+    private String sanitize(String input) {
+        return input != null ? input.replaceAll("[\\r\\n]", "") : "";
     }
 }
