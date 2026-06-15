@@ -79,8 +79,19 @@ public class JwtTokenProvider {
                     .build()
                     .parseSignedClaims(token);
             return true;
+        } catch (ExpiredJwtException e) {
+            return false;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
+        }
+    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            Date expiration = getClaims(token).getExpiration();
+            return expiration.before(new Date());
+        } catch (Exception e) {
+            return true;
         }
     }
 

@@ -2,6 +2,7 @@ package com.okanetransfer.config;
 
 import com.okanetransfer.security.JwtAuthFilter;
 import com.okanetransfer.security.RateLimitingFilter;
+import com.okanetransfer.security.SecurityHeadersFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,7 @@ public class SecurityConfig {
     @Autowired private UserDetailsService userDetailsService;
     @Autowired private JwtAuthFilter jwtAuthFilter;
     @Autowired private RateLimitingFilter rateLimitingFilter;
+    @Autowired private SecurityHeadersFilter securityHeadersFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
