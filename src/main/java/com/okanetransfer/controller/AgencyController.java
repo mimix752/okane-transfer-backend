@@ -3,6 +3,7 @@ package com.okanetransfer.controller;
 import com.okanetransfer.dto.request.AgencyRequestDTO;
 import com.okanetransfer.dto.response.AgencyPerformanceResponseDTO;
 import com.okanetransfer.dto.response.AgencyResponseDTO;
+import com.okanetransfer.dto.response.PageResponse;
 import com.okanetransfer.service.AgencyService;
 import com.okanetransfer.util.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +36,13 @@ public class AgencyController {
             @Parameter(description = "Filter by active status") @RequestParam(required = false) Boolean active) {
 
         List<AgencyResponseDTO> result = agencyService.getAllAgencies(country, active);
+        return ResponseEntity.ok(ApiResponse.success("Agencies retrieved successfully", result));
+    }
+
+    @GetMapping("/paginated")
+    @Operation(summary = "Get all agencies paginated", description = "Returns paginated list of agencies")
+    public ResponseEntity<ApiResponse<PageResponse<AgencyResponseDTO>>> getAllAgenciesPaginated(Pageable pageable) {
+        PageResponse<AgencyResponseDTO> result = agencyService.getAllAgenciesPaginated(pageable);
         return ResponseEntity.ok(ApiResponse.success("Agencies retrieved successfully", result));
     }
 

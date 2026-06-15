@@ -4,6 +4,8 @@ import com.okanetransfer.dto.request.CorridorRequestDTO;
 import com.okanetransfer.dto.response.CorridorResponseDTO;
 import com.okanetransfer.dto.response.CorridorStatsResponseDTO;
 import com.okanetransfer.dto.response.CurrencyResponseDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -11,6 +13,7 @@ public interface CorridorService {
 
     List<CorridorResponseDTO> getAllCorridors();
     List<CorridorResponseDTO> getActiveCorridors();
+    Page<CorridorResponseDTO> getActiveCorridorsPaginated(Pageable pageable);
     List<CorridorResponseDTO> getBySourceCountry(String sourceCountry);
     CorridorResponseDTO getById(Long id);
     CorridorResponseDTO create(CorridorRequestDTO dto, String adminIp);

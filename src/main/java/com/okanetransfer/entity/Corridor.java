@@ -2,6 +2,7 @@ package com.okanetransfer.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -41,6 +42,9 @@ public class Corridor {
             foreignKey = @ForeignKey(name = "fk_corridor_dest_currency"))
     private Currency destinationCurrency;
 
+    @Column(name = "exchange_rate", precision = 19, scale = 6)
+    private BigDecimal exchangeRate;
+
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
@@ -67,6 +71,7 @@ public class Corridor {
                     String destinationCountry,
                     Currency sourceCurrency,
                     Currency destinationCurrency,
+                    BigDecimal exchangeRate,
                     boolean active,
                     LocalDateTime createdAt,
                     LocalDateTime updatedAt) {
@@ -75,6 +80,7 @@ public class Corridor {
         this.destinationCountry  = destinationCountry;
         this.sourceCurrency      = sourceCurrency;
         this.destinationCurrency = destinationCurrency;
+        this.exchangeRate        = exchangeRate;
         this.active              = active;
         this.createdAt           = createdAt;
         this.updatedAt           = updatedAt;
@@ -88,6 +94,7 @@ public class Corridor {
         private String        destinationCountry;
         private Currency      sourceCurrency;
         private Currency      destinationCurrency;
+        private BigDecimal    exchangeRate;
         private boolean       active = true;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
@@ -102,6 +109,8 @@ public class Corridor {
         { this.sourceCurrency = sourceCurrency; return this; }
         public Builder destinationCurrency(Currency destinationCurrency)
         { this.destinationCurrency = destinationCurrency; return this; }
+        public Builder exchangeRate(BigDecimal exchangeRate)
+        { this.exchangeRate = exchangeRate; return this; }
         public Builder active(boolean active)
         { this.active = active; return this; }
         public Builder createdAt(LocalDateTime createdAt)
@@ -116,6 +125,7 @@ public class Corridor {
             c.destinationCountry  = this.destinationCountry;
             c.sourceCurrency      = this.sourceCurrency;
             c.destinationCurrency = this.destinationCurrency;
+            c.exchangeRate        = this.exchangeRate;
             c.active              = this.active;
             c.createdAt           = this.createdAt;
             c.updatedAt           = this.updatedAt;
@@ -141,6 +151,10 @@ public class Corridor {
     public Currency getDestinationCurrency() { return destinationCurrency; }
     public void setDestinationCurrency(Currency destinationCurrency)
     { this.destinationCurrency = destinationCurrency; }
+
+    public BigDecimal getExchangeRate() { return exchangeRate; }
+    public void setExchangeRate(BigDecimal exchangeRate)
+    { this.exchangeRate = exchangeRate; }
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }

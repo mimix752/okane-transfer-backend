@@ -2,6 +2,7 @@ package com.okanetransfer.service.envoi;
 
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
+import com.okanetransfer.dto.response.PageResponse;
 import com.okanetransfer.entity.Agent;
 import com.okanetransfer.entity.Corridor;
 import com.okanetransfer.entity.Currency;
@@ -22,11 +23,15 @@ import com.okanetransfer.service.NotificationService;
 import com.okanetransfer.service.ReceiptPrintingService;
 import com.okanetransfer.service.caisse.CashRegisterService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class EnvoiService {
@@ -119,4 +124,26 @@ public class EnvoiService {
         if (!corridor.getDestinationCountry().equalsIgnoreCase(recipientCountry))
             throw new IllegalArgumentException("Recipient country does not match corridor destination country");
     }
-}
+
+    @Transactional(readOnly = true)
+    public PageResponse<EnvoiResponseDTO> getRecentTransfersPaginated(Long agentId, int page, int size) {
+        Agent agent = agentRepository.findByUserId(agentId)
+                .orElseThrow(() -> new IllegalArgumentException("User is not an agent"));
+        
+        Pageable pageable = PageRequest.of(page, size);
+        var transferPage = transferRepository.findByAgencyIdOrderByCreatedAtDesc(agent.getAgency().getId(), pageable);
+        
+        List<EnvoiResponseDTO> content = transferPage.getContent().stream()
+                .map(t -> EnvoiResponseDTO.fromEntity(t, t.getFees()))
+                .collect(Collectors.toList());
+        
+        return new PageResponse<>(content, page, size, transferPage.getTotalElements(), 
+                transferPage.getTotalPages(), transferPage.isFirst(), transferPage.isLast());
+    }
+
+    @Transactional(readOnly = true)
+    public EnvoiResponseDTO searchTransferByCode(String code) {
+        Transfer transfer = transferRepository.findByTransferCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException("Transfer not found with code: " + code));
+        return EnvoiResponseDTO.fromEntity(transfer, transfer.getFees());
+    }

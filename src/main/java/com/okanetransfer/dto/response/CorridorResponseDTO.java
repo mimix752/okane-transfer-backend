@@ -1,6 +1,7 @@
 package com.okanetransfer.dto.response;
 
 import com.okanetransfer.entity.Corridor;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class CorridorResponseDTO {
@@ -10,6 +11,7 @@ public class CorridorResponseDTO {
     private String        destinationCountry;
     private CurrencyInfo  sourceCurrency;
     private CurrencyInfo  destinationCurrency;
+    private BigDecimal    exchangeRate;
     private boolean       active;
     private LocalDateTime createdAt;
 
@@ -78,6 +80,7 @@ public class CorridorResponseDTO {
         d.id                 = corridor.getId();
         d.sourceCountry      = corridor.getSourceCountry();
         d.destinationCountry = corridor.getDestinationCountry();
+        d.exchangeRate       = corridor.getExchangeRate();
         d.active             = corridor.isActive();
         d.createdAt          = corridor.getCreatedAt();
 
@@ -106,6 +109,7 @@ public class CorridorResponseDTO {
         private String        destinationCountry;
         private CurrencyInfo  sourceCurrency;
         private CurrencyInfo  destinationCurrency;
+        private BigDecimal    exchangeRate;
         private boolean       active;
         private LocalDateTime createdAt;
 
@@ -117,10 +121,10 @@ public class CorridorResponseDTO {
         { this.destinationCountry = destinationCountry; return this; }
         public Builder sourceCurrency(CurrencyInfo sourceCurrency)
         { this.sourceCurrency = sourceCurrency; return this; }
-        public Builder destinationCurrency(
-                CurrencyInfo destinationCurrency)
-        { this.destinationCurrency = destinationCurrency;
-            return this; }
+        public Builder destinationCurrency(CurrencyInfo destinationCurrency)
+        { this.destinationCurrency = destinationCurrency; return this; }
+        public Builder exchangeRate(BigDecimal exchangeRate)
+        { this.exchangeRate = exchangeRate; return this; }
         public Builder active(boolean active)
         { this.active = active; return this; }
         public Builder createdAt(LocalDateTime createdAt)
@@ -133,6 +137,7 @@ public class CorridorResponseDTO {
             d.destinationCountry  = this.destinationCountry;
             d.sourceCurrency      = this.sourceCurrency;
             d.destinationCurrency = this.destinationCurrency;
+            d.exchangeRate        = this.exchangeRate;
             d.active              = this.active;
             d.createdAt           = this.createdAt;
             return d;
@@ -168,4 +173,8 @@ public class CorridorResponseDTO {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt)
     { this.createdAt = createdAt; }
+
+    public BigDecimal getExchangeRate() { return exchangeRate; }
+    public void setExchangeRate(BigDecimal exchangeRate)
+    { this.exchangeRate = exchangeRate; }
 }

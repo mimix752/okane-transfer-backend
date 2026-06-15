@@ -12,6 +12,9 @@ import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.CurrencyRepository;
 import com.okanetransfer.repository.FeeGridRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.service.AuditService;
 import com.okanetransfer.service.CorridorService;
@@ -59,11 +62,9 @@ public class CorridorServiceImpl implements CorridorService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CorridorResponseDTO> getActiveCorridors() {
-        return corridorRepository.findByActive(true)
-                .stream()
-                .map(CorridorResponseDTO::fromEntity)
-                .collect(Collectors.toList());
+    public Page<CorridorResponseDTO> getActiveCorridorsPaginated(Pageable pageable) {
+        Page<Corridor> page = corridorRepository.findByActive(true, pageable);
+        return page.map(CorridorResponseDTO::fromEntity);
     }
 
     @Override

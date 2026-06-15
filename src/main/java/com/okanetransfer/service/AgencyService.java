@@ -3,6 +3,8 @@ package com.okanetransfer.service;
 import com.okanetransfer.dto.request.AgencyRequestDTO;
 import com.okanetransfer.dto.response.AgencyPerformanceResponseDTO;
 import com.okanetransfer.dto.response.AgencyResponseDTO;
+import com.okanetransfer.dto.response.PageResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,6 +12,8 @@ import java.util.List;
 public interface AgencyService {
 
     List<AgencyResponseDTO> getAllAgencies(String country, Boolean active);
+
+    PageResponse<AgencyResponseDTO> getAllAgenciesPaginated(Pageable pageable);
 
     AgencyResponseDTO getById(Long id);
 

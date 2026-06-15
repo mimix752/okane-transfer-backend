@@ -3,6 +3,7 @@ package com.okanetransfer.service.impl;
 import com.okanetransfer.dto.request.AgencyRequestDTO;
 import com.okanetransfer.dto.response.AgencyPerformanceResponseDTO;
 import com.okanetransfer.dto.response.AgencyResponseDTO;
+import com.okanetransfer.dto.response.PageResponse;
 import com.okanetransfer.entity.Agency;
 import com.okanetransfer.entity.Agent;
 import com.okanetransfer.entity.Transfer;
@@ -19,6 +20,8 @@ import com.okanetransfer.service.AuditService;
 import com.okanetransfer.util.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,8 +61,14 @@ public class AgencyServiceImpl implements AgencyService {
 
     @Transactional(readOnly = true)
     @Override
-    public AgencyResponseDTO getById(Long id) {
-        return toDTO(findOrThrow(id));
+    public PageResponse<AgencyResponseDTO> getAllAgenciesPaginated(Pageable pageable) {
+        Page<Agency> page = agencyRepository.findAll(pageable);
+        List<AgencyResponseDTO> content = page.getContent().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+        return new PageResponse<>(content, page.getNumber(), page.getSize(),
+                page.getTotalElements(), page.getTotalPages(),
+                page.isFirst(), page.isLast());
     }
 
     @Transactional

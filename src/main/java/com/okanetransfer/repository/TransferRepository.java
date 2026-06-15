@@ -2,6 +2,8 @@ package com.okanetransfer.repository;
 
 import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.enums.TransferStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -110,4 +112,11 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
     BigDecimal sumAmountBySenderDocumentAndCreatedAtAfter(
             @Param("doc") String senderDocument,
             @Param("date") LocalDateTime fromDate);
+
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.agency.id = :agencyId " +
+            "ORDER BY t.createdAt DESC")
+    Page<Transfer> findByAgencyIdOrderByCreatedAtDesc(
+            @Param("agencyId") Long agencyId,
+            Pageable pageable);
 }

@@ -1,12 +1,14 @@
 package com.okanetransfer.service;
 
+import com.okanetransfer.dto.response.PageResponse;
 import com.okanetransfer.dto.response.TransferResponseDTO;
 import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.TransferRepository;
-import com.okanetransfer.service.AgencyService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,4 +90,14 @@ public class TransferService {
         }
         return TransferResponseDTO.fromEntity(updated);
     }
-}
+
+    @Transactional(readOnly = true)
+    public PageResponse<TransferResponseDTO> getAllPaginated(Pageable pageable) {
+        Page<Transfer> page = transferRepository.findAll(pageable);
+        List<TransferResponseDTO> content = page.getContent().stream()
+                .map(TransferResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+        return new PageResponse<>(content, page.getNumber(), page.getSize(), 
+                page.getTotalElements(), page.getTotalPages(), 
+                page.isFirst(), page.isLast());
+    }

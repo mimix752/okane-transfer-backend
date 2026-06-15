@@ -1,10 +1,12 @@
 package com.okanetransfer.controller;
 
+import com.okanetransfer.dto.response.PageResponse;
 import com.okanetransfer.dto.response.TransferResponseDTO;
 import com.okanetransfer.enums.TransferStatus;
 import com.okanetransfer.service.TransferService;
 import com.okanetransfer.util.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -32,10 +34,10 @@ public class TransferController {
         return ResponseEntity.ok(ApiResponse.success("Transfer retrieved", response));
     }
 
-    @GetMapping
+    @GetMapping("/paginated")
     @PreAuthorize("hasAnyRole('AGENT', 'ADMIN', 'CLIENT')")
-    public ResponseEntity<ApiResponse<List<TransferResponseDTO>>> getAll() {
-        List<TransferResponseDTO> response = transferService.getAll();
+    public ResponseEntity<ApiResponse<PageResponse<TransferResponseDTO>>> getAllPaginated(Pageable pageable) {
+        PageResponse<TransferResponseDTO> response = transferService.getAllPaginated(pageable);
         return ResponseEntity.ok(ApiResponse.success("Transfers retrieved", response));
     }
 

@@ -1,6 +1,8 @@
 package com.okanetransfer.repository;
 
 import com.okanetransfer.entity.Corridor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +20,8 @@ public interface CorridorRepository
     List<Corridor> findByDestinationCountry(String destinationCountry);
 
     List<Corridor> findByActive(boolean active);
+
+    Page<Corridor> findByActive(boolean active, Pageable pageable);
 
     Optional<Corridor> findBySourceCountryAndDestinationCountry(
             String sourceCountry,
