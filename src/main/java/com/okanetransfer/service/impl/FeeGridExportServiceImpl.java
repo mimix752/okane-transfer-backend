@@ -169,9 +169,8 @@ public class FeeGridExportServiceImpl
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        try (OutputStreamWriter writer = new OutputStreamWriter(
-                baos, StandardCharsets.UTF_8)) {
-
+        try {
+            OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
             writer.write("\uFEFF");
 
             CSVPrinter printer = new CSVPrinter(writer,
@@ -198,6 +197,7 @@ public class FeeGridExportServiceImpl
             }
 
             printer.flush();
+            writer.flush();
 
         } catch (IOException e) {
             throw new RuntimeException(

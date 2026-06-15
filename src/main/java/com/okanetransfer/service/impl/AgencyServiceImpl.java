@@ -31,6 +31,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,6 +42,7 @@ public class AgencyServiceImpl implements AgencyService {
     @Autowired private UserRepository userRepository;
     @Autowired private AuditService auditService;
     @Autowired private TransferRepository transferRepository;
+    @Autowired private jakarta.persistence.EntityManager entityManager;
 
     @Transactional(readOnly = true)
     @Override
@@ -88,6 +90,12 @@ public class AgencyServiceImpl implements AgencyService {
         return toDTO(saved);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public AgencyResponseDTO getById(Long id) {
+        return toDTO(findOrThrow(id));
+    }
+
     @Transactional
     @Override
     public AgencyResponseDTO update(Long id, AgencyRequestDTO dto, String adminIp) {
@@ -120,6 +128,7 @@ public class AgencyServiceImpl implements AgencyService {
                 previous + " -> " + !previous);
     }
 
+
     @Transactional
     @Override
     public void addAgent(Long agencyId, Long userId, String adminIp) {
@@ -127,35 +136,35 @@ public class AgencyServiceImpl implements AgencyService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
-        user.setRole(Role.AGENT);
-        userRepository.save(user);
+        String username = user.getUsername(); // grab before any session changes
 
-        List<Agent> existing = agentRepository.findByAgency_Id(agencyId).stream()
-                .filter(a -> a.getId().equals(userId)).collect(Collectors.toList());
+        Optional<Agent> maybeAgent = agentRepository.findById(userId);
 
-        if (existing.isEmpty()) {
-            Agent agent = new Agent();
-            agent.setId(user.getId());
-            agent.setUsername(user.getUsername());
-            agent.setEmail(user.getEmail());
-            agent.setPassword(user.getPassword());
-            agent.setPhone(user.getPhone());
-            agent.setRole(Role.AGENT);
-            agent.setEnabled(user.isEnabled());
+        if (maybeAgent.isPresent()) {
+            Agent agent = maybeAgent.get();
             agent.setAgency(agency);
             agent.setActive(true);
+            agent.setRole(Role.AGENT);
             agentRepository.save(agent);
         } else {
-            Agent agent = existing.get(0);
-            agent.setAgency(agency);
-            agent.setActive(true);
-            agentRepository.save(agent);
+            entityManager.createNativeQuery(
+                            "UPDATE users SET role = 'AGENT' WHERE id = ?1")
+                    .setParameter(1, userId)
+                    .executeUpdate();
+
+            entityManager.createNativeQuery(
+                            "INSERT INTO agents (id, agency_id, active) VALUES (?1, ?2, true)")
+                    .setParameter(1, userId)
+                    .setParameter(2, agencyId)
+                    .executeUpdate();
+
+            entityManager.flush();
+            entityManager.clear();
         }
 
         auditService.log(SecurityUtils.getCurrentUsername(), "ADD_AGENT", "Agency", agencyId,
-                "userId=" + userId + " | username=" + user.getUsername());
+                "userId=" + userId + " | username=" + username);
     }
-
     @Transactional
     @Override
     public void removeAgent(Long agencyId, Long userId, String adminIp) {

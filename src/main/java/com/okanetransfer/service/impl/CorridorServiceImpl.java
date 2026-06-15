@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 @Service
 public class CorridorServiceImpl implements CorridorService {
 
+
     private final CorridorRepository corridorRepository;
     private final CurrencyRepository currencyRepository;
     private final AuditService       auditService;
@@ -50,6 +51,17 @@ public class CorridorServiceImpl implements CorridorService {
         this.feeGridRepository   = feeGridRepository;
     }
     // ─── Queries ───────────────────────────────────────────────
+
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CorridorResponseDTO> getActiveCorridors() {
+        return corridorRepository.findByActive(true)
+                .stream()
+                .map(CorridorResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
 
     @Override
     @Transactional(readOnly = true)

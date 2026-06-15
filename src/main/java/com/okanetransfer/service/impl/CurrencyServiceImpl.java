@@ -2,6 +2,7 @@ package com.okanetransfer.service.impl;
 
 import com.okanetransfer.dto.request.CurrencyRequestDTO;
 import com.okanetransfer.dto.response.CurrencyResponseDTO;
+import com.okanetransfer.entity.Corridor;
 import com.okanetransfer.entity.Currency;
 import com.okanetransfer.entity.CurrencyRate;
 import com.okanetransfer.enums.RateSource;
@@ -167,7 +168,7 @@ public class CurrencyServiceImpl implements CurrencyService {
             boolean usedByActiveCorridor =
                     corridorRepository.findByCurrencyId(id)
                             .stream()
-                            .anyMatch(c -> c.isActive());
+                            .anyMatch(Corridor::isActive);
 
             if (usedByActiveCorridor)
                 throw new IllegalStateException(
@@ -180,18 +181,19 @@ public class CurrencyServiceImpl implements CurrencyService {
         currency.setActive(!previous);
         currencyRepository.save(currency);
 
+        String oldStatus = previous ? "active" : "inactive";
+        String newStatus = !previous ? "active" : "inactive";
+
         auditService.log(
                 SecurityUtils.getCurrentUsername(),
                 previous ? "DEACTIVATE_CURRENCY" : "ACTIVATE_CURRENCY",
                 "Currency",
                 id,
-                "old=" + previous
-                        + " | new=" + !previous
-                        + " | code=" + currency.getCode()
-                        + " | ip=" + adminIp
+                LocalDateTime.now() + " - Modification de status de Devise old : " + oldStatus
+                        + " -> new : " + newStatus +
+                        " (code = " + currency.getCode() + ")"
         );
     }
-
 
     private Currency findOrThrow(Long id) {
         return currencyRepository.findById(id)

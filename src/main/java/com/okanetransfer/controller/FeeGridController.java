@@ -2,6 +2,7 @@ package com.okanetransfer.controller;
 
 import com.okanetransfer.dto.request.FeeGridRequestDTO;
 import com.okanetransfer.dto.response.FeeGridResponseDTO;
+import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.service.FeeGridService;
 import com.okanetransfer.util.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -132,7 +133,7 @@ public class FeeGridController {
                     + "without creating a real transfer. "
                     + "Useful for validation before transfer creation."
     )
-    @GetMapping("/simulate")
+    @PostMapping("/simulate")
     public ResponseEntity<ApiResponse<FeeGridResponseDTO>>
     simulate(
             @Parameter(description = "Corridor ID")
@@ -141,6 +142,7 @@ public class FeeGridController {
             @Parameter(description = "Amount to check (in MAD)",
                     example = "5000.00")
             @RequestParam BigDecimal amount) {
+        try{
 
         FeeGridResponseDTO result = feeGridService.simulate(
                 corridorId, amount);
@@ -148,6 +150,11 @@ public class FeeGridController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Fee simulation completed", result));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
     }
+
 }
 

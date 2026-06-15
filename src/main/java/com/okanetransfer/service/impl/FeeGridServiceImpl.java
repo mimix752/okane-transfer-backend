@@ -42,7 +42,7 @@ public class FeeGridServiceImpl implements FeeGridService {
     public List<FeeGridResponseDTO> getByCorridor(Long corridorId) {
         findCorridorOrThrow(corridorId);
         return feeGridRepository
-                .findByCorridor_IdAndActiveOrderByMinAmountAsc(corridorId, true)
+                .findByCorridor_Id(corridorId)
                 .stream()
                 .map(FeeGridResponseDTO::fromEntity)
                 .collect(Collectors.toList());

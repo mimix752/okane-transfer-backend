@@ -147,3 +147,4 @@ public class EnvoiService {
                 .orElseThrow(() -> new ResourceNotFoundException("Transfer not found with code: " + code));
         return EnvoiResponseDTO.fromEntity(transfer, transfer.getFees());
     }
+}
