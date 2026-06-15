@@ -239,11 +239,14 @@ public class AgencyServiceImpl implements AgencyService {
     @Override
     public void checkAndDeductBalance(Long agencyId, BigDecimal amount) {
         Agency agency = findOrThrow(agencyId);
+        if (!agency.isActive()) {
+            throw new IllegalStateException("Agency '" + agency.getName() + "' is suspended");
+        }
         BigDecimal currentBalance = agency.getCurrentBalance();
         if (currentBalance == null || currentBalance.compareTo(amount) < 0) {
             throw new InsufficientFundsException(
                     "Solde insuffisant dans l'agence '" + agency.getName()
-                    + "'. Disponible: " + currentBalance + ", Requis: " + amount);
+                            + "'. Disponible: " + currentBalance + ", Requis: " + amount);
         }
         agency.setCurrentBalance(currentBalance.subtract(amount));
         agencyRepository.save(agency);

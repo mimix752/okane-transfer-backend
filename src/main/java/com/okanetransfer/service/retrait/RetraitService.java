@@ -25,32 +25,31 @@ public class RetraitService {
     @Autowired private CashRegisterService cashRegisterService;
 
     @Transactional
-    public RetraitResponseDTO retirer(RetraitRequestDTO dto) {
+    public RetraitResponseDTO retirer(RetraitRequestDTO dto, Long agentId) {
         Transfer t = verificationService.findByCodeOrPhone(dto.getTransferCode(), dto.getRecipientPhone());
-
         verificationService.verifier(t, dto.getRecipientPhone(), dto.getRecipientCIN());
 
-        // Restaurer le solde à l'agence de destination lors du retrait
-        agencyService.addBalance(t.getAgency().getId(), t.getAmount());
+        if (!t.getAgency().isActive()) {
+            throw new IllegalStateException("Agency is suspended, cannot process withdrawal");
+        }
+
+        // REMOVE the old agencyService.addBalance() line — it was wrong
+        // Cash goes OUT of the caisse (paying the recipient)
+        try {
+            cashRegisterService.debiter(agentId, t.getConvertedAmount(), "RETRAIT", t.getTransferCode());
+        } catch (Exception e) {
+            // log but don't block if caisse not open — handle gracefully
+            System.out.println("Caisse debit warning: " + e.getMessage());
+        }
 
         t.setStatus(TransferStatus.PAID);
 
-        // Mettre à jour la caisse (crédit lors du retrait) - géré via endpoint caisse
+        agentAuditService.logTransferWithdrawal(t.getId(), t.getTransferCode(), dto.getRecipientPhone());
 
-        
-        // Enregistrer dans l'audit trail
-        agentAuditService.logTransferWithdrawal(
-            t.getId(),
-            t.getTransferCode(),
-            dto.getRecipientPhone()
-        );
-        
-        // Imprimer le reçu de retrait
         String receiptContent = receiptPrintingService.generateWithdrawalReceipt(t);
         receiptPrintingService.printReceipt(receiptContent);
         return toDTO(t);
     }
-
     public RetraitResponseDTO rechercher(String code, String telephone) {
         Transfer t = verificationService.findByCodeOrPhone(code, telephone);
         return toDTO(t);

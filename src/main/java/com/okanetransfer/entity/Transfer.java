@@ -23,6 +23,18 @@ public class Transfer {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipient_user_id", nullable = true)
+    private User recipientUser;
+
+    @Column(name = "sender_phone")
+    public String getSenderPhone() {
+        return senderPhone;
+    }
+
+    @Column(name = "recipient_phone")
+    private String senderPhone;
+
     // ─── CINs chiffrés en AES-256 (CDC 4.3) ─────────────────────────────────────
     @Convert(converter = CryptoConverter.class)
     @Column(name = "sender_cin")
@@ -76,23 +88,39 @@ public class Transfer {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_user_id", nullable = true)
+    private User senderUser;
+
+
+
+
+
+
     public Transfer() {}
 
-    public Transfer(Long id, String transferCode, User sender, String senderCIN,
-                    String recipientName, String recipientPhone, String recipientCountry,
-                    String senderCountry, BigDecimal amount, Currency currency,
-                    BigDecimal convertedAmount, Currency targetCurrency,
-                    TransferStatus status, Agency agency,
-                    LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public User getSenderUser() {
+        return senderUser;
+    }
+
+    public void setSenderUser(User senderUser) {
+        this.senderUser = senderUser;
+    }
+
+    public Transfer(Long id, String transferCode, User sender, User recipientUser, String senderPhone, String senderCIN, String recipientName, String recipientPhone, String recipientCIN, String recipientCountry, String senderCountry, BigDecimal amount, BigDecimal fees, Currency currency, BigDecimal convertedAmount, Currency targetCurrency, TransferStatus status, Agency agency, LocalDateTime createdAt, LocalDateTime updatedAt, User senderUser) {
         this.id = id;
         this.transferCode = transferCode;
         this.sender = sender;
+        this.recipientUser = recipientUser;
+        this.senderPhone = senderPhone;
         this.senderCIN = senderCIN;
         this.recipientName = recipientName;
         this.recipientPhone = recipientPhone;
+        this.recipientCIN = recipientCIN;
         this.recipientCountry = recipientCountry;
         this.senderCountry = senderCountry;
         this.amount = amount;
+        this.fees = fees;
         this.currency = currency;
         this.convertedAmount = convertedAmount;
         this.targetCurrency = targetCurrency;
@@ -100,6 +128,7 @@ public class Transfer {
         this.agency = agency;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.senderUser = senderUser;
     }
 
     public Long getId() { return id; }
@@ -144,4 +173,17 @@ public class Transfer {
 
     @PreUpdate
     void preUpdate() { this.updatedAt = LocalDateTime.now(); }
+
+    public void setSenderPhone(String normalizedSenderPhone) {
+    }
+
+
+    public User getRecipientUser() {
+        return recipientUser;
+    }
+
+    public void setRecipientUser(User recipientUser) {
+        this.recipientUser = recipientUser;
+    }
+
 }

@@ -22,4 +22,5 @@ public interface CorridorService {
     List<CurrencyResponseDTO> getActiveCurrencies();
     CorridorStatsResponseDTO getStats(Long corridorId);
     List<CorridorStatsResponseDTO> getAllStats();
+    CorridorResponseDTO findByCountries(String from, String to);
 }

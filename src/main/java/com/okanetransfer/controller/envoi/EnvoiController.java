@@ -4,6 +4,8 @@ import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.CorridorResponseDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
 import com.okanetransfer.dto.response.PageResponse;
+import com.okanetransfer.repository.AgentRepository;
+import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.CorridorService;
 import com.okanetransfer.service.envoi.EnvoiService;
 import com.okanetransfer.util.ApiResponse;
@@ -25,6 +27,8 @@ public class EnvoiController {
 
     @Autowired private EnvoiService envoiService;
     @Autowired private CorridorService corridorService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private AgentRepository agentRepository;
 
     @GetMapping("/currencies")
     @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
@@ -60,7 +64,7 @@ public class EnvoiController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
-        Long agentId = (Long) authentication.getDetails();
+        Long agentId = resolveAgentId(authentication);
         PageResponse<EnvoiResponseDTO> response = envoiService.getRecentTransfersPaginated(agentId, page, size);
         return ResponseEntity.ok(ApiResponse.success("Recent transfers retrieved", response));
     }
@@ -78,9 +82,40 @@ public class EnvoiController {
             @Valid @RequestBody EnvoiRequestDTO dto,
             Authentication authentication) {
 
-        Long agentId = (Long) authentication.getDetails();
+        Long agentId = resolveAgentId(authentication);
         EnvoiResponseDTO response = envoiService.createTransfer(dto, agentId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Transfert créé avec succès", response));
+    }
+
+    private Long resolveAgentId(Authentication authentication) {
+        String username = authentication.getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username))
+                .getId();
+    }
+
+    @GetMapping("/search/phone/{phone}")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<EnvoiResponseDTO>>> searchTransfersByPhone(
+            @PathVariable String phone,
+            Authentication authentication) {
+        Long agentId = resolveAgentId(authentication);
+        List<EnvoiResponseDTO> response = envoiService.searchTransfersByPhone(phone, agentId);
+        return ResponseEntity.ok(ApiResponse.success("Transfers found", response));
+    }
+
+    @GetMapping("/corridor-by-countries")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    public ResponseEntity<ApiResponse<CorridorResponseDTO>> getCorridorByCountries(
+            @RequestParam String to,
+            Authentication authentication) {
+        Long agentId = resolveAgentId(authentication);
+        com.okanetransfer.entity.Agent agent = agentRepository
+                .findByUserId(agentId)
+                .orElseThrow(() -> new RuntimeException("Agent not found"));
+        String from = agent.getAgency().getCountry();
+        CorridorResponseDTO corridor = corridorService.findByCountries(from, to);
+        return ResponseEntity.ok(ApiResponse.success("Corridor found", corridor));
     }
 }

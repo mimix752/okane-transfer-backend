@@ -8,6 +8,7 @@ import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.Role;
 import com.okanetransfer.exception.ResourceNotFoundException;
 import com.okanetransfer.repository.AgentRepository;
+import com.okanetransfer.repository.TransferRepository;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.security.JwtTokenProvider;
 import com.okanetransfer.security.OtpService;
@@ -26,6 +27,7 @@ public class AuthService {
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private OtpService otpService;
     @Autowired private AgentRepository agentRepository;
+    @Autowired private TransferRepository transferRepository;
 
     // ─── Register ────────────────────────────────────────────────────────────────
 
@@ -45,6 +47,16 @@ public class AuthService {
         user.setEnabled(true);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
+
+        if (user.getPhone() != null) {
+            transferRepository.findAllByRecipientPhoneOrderByCreatedAtDesc(user.getPhone())
+                    .forEach(t -> {
+                        if (t.getRecipientUser() == null) {
+                            t.setRecipientUser(user);
+                            transferRepository.save(t);
+                        }
+                    });
+        }
 
         User savedUser = userRepository.save(user);
 

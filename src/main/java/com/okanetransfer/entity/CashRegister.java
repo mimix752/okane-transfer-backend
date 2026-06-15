@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Table(name = "cash_registers")
 public class CashRegister {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,6 +25,9 @@ public class CashRegister {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
+    @Column(name = "opening_balance", nullable = false, precision = 18, scale = 2)
+    private BigDecimal openingBalance = BigDecimal.ZERO;
+
     private LocalDateTime openedAt;
     private LocalDateTime closedAt;
     private boolean open = true;
@@ -36,6 +40,7 @@ public class CashRegister {
         this.agency = agency;
         this.agent = agent;
         this.balance = balance;
+        this.openingBalance = balance;
         this.openedAt = openedAt;
         this.closedAt = closedAt;
         this.open = open;
@@ -96,4 +101,13 @@ public class CashRegister {
     public void setOpen(boolean open) {
         this.open = open;
     }
+
+    public BigDecimal getOpeningBalance() {
+        return openingBalance;
+    }
+
+    public void setOpeningBalance(BigDecimal openingBalance) {
+        this.openingBalance = openingBalance;
+    }
+
 }

@@ -119,4 +119,11 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
     Page<Transfer> findByAgencyIdOrderByCreatedAtDesc(
             @Param("agencyId") Long agencyId,
             Pageable pageable);
+
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.recipientPhone = :phone " +
+            "ORDER BY t.createdAt DESC")
+    List<Transfer> findAllByRecipientPhoneOrderByCreatedAtDesc(@Param("phone") String phone);
+
+    List<Transfer> findBySenderCINOrderByCreatedAtDesc(String senderCIN);
 }

@@ -29,6 +29,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(unique = true)
     private String phone;
 
     @Enumerated(EnumType.STRING)
@@ -40,6 +41,7 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
 
     private boolean enabled = true;
 

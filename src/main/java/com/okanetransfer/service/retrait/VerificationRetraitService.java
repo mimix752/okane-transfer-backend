@@ -22,6 +22,9 @@ public class VerificationRetraitService {
     }
 
     public void verifier(Transfer t, String recipientPhone, String recipientCIN) {
+        if (t.getStatus() == TransferStatus.PAID || t.getStatus() == TransferStatus.CANCELLED) {
+            throw new RuntimeException("Transfert déjà traité. Statut: " + t.getStatus());
+        }
         if (t.getStatus() != TransferStatus.PENDING && t.getStatus() != TransferStatus.VALIDATED)
             throw new RuntimeException("Transfert non disponible au retrait. Statut: " + t.getStatus());
         if (!t.getRecipientPhone().equals(recipientPhone))

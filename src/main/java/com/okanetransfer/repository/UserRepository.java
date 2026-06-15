@@ -25,4 +25,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByEnabled(boolean enabled, Pageable pageable);
 
     Page<User> findByRoleAndEnabled(Role role, boolean enabled, Pageable pageable);
+
+    Optional<User> findByPhone(String phone);
+
 }

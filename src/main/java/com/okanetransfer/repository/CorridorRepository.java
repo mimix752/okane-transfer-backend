@@ -45,4 +45,7 @@ public interface CorridorRepository
            OR c.destinationCurrency.id = :currencyId
     """)
     List<Corridor> findByCurrencyId(@Param("currencyId") Long currencyId);
+
+    Optional<Corridor> findBySourceCountryAndDestinationCountryAndActiveTrue(
+            String sourceCountry, String destinationCountry);
 }

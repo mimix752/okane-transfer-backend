@@ -53,6 +53,15 @@ public class CorridorServiceImpl implements CorridorService {
     // ─── Queries ───────────────────────────────────────────────
 
 
+    @Override
+    @Transactional(readOnly = true)
+    public CorridorResponseDTO findByCountries(String from, String to) {
+        Corridor corridor = corridorRepository
+                .findBySourceCountryAndDestinationCountryAndActiveTrue(from, to)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No active corridor from " + from + " to " + to));
+        return CorridorResponseDTO.fromEntity(corridor);
+    }
 
     @Override
     @Transactional(readOnly = true)

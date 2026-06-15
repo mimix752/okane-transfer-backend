@@ -1,6 +1,8 @@
 package com.okanetransfer.service.caisse;
 
+import com.okanetransfer.entity.Agency;
 import com.okanetransfer.entity.CashRegister;
+import com.okanetransfer.repository.AgencyRepository;
 import com.okanetransfer.repository.CashRegisterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import java.util.Map;
 public class CashClosingService {
 
     @Autowired private CashRegisterRepository cashRegisterRepository;
+    @Autowired private AgencyRepository agencyRepository;
 
     @Transactional
     public Map<String, Object> fermerCaisse(Long agentId, BigDecimal soldeReel) {
@@ -26,6 +29,10 @@ public class CashClosingService {
 
         caisse.setOpen(false);
         caisse.setClosedAt(LocalDateTime.now());
+
+        Agency agency = caisse.getAgency();
+        agency.setCurrentBalance(caisse.getBalance());
+        agencyRepository.save(agency);
 
         Map<String, Object> result = new HashMap<>();
         result.put("caisse", caisse);
