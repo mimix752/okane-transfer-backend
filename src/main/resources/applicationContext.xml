@@ -23,8 +23,7 @@
                                 expression="com.okanetransfer.config.WebConfig"/>
         <context:exclude-filter type="assignable"
                                 expression="com.okanetransfer.config.OpenApiConfig"/>
-        <context:exclude-filter type="assignable"
-                                expression="com.okanetransfer.config.SecurityConfig"/>
+
     </context:component-scan>
 
     <context:property-placeholder system-properties-mode="OVERRIDE"
