@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "build": {
+    "secrets": []
+  },
+  "steps": {
+    "build": {
+      "secrets": []
+    }
+  },
+  "deploy": {
+    "startCommand": "java -jar target/okane-transfer-backend-*.jar"
+  }
+}
