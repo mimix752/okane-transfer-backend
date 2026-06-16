@@ -55,15 +55,6 @@ public class WebConfig implements WebMvcConfigurer {
         resolvers.add(new PageableHandlerMethodArgumentResolver());
     }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOriginPatterns("https://okane-transfer-frontend-roan.vercel.app")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                .allowedHeaders("*")
-                .allowCredentials(true)
-                .maxAge(3600);
-    }
 
     @Override
     public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
