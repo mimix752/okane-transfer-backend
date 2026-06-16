@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Client - Okane Transfer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        /* ─── AUTH PAGES ─── */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .auth-logo { text-align: center; margin-bottom: 30px; }
+        .auth-logo .icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+        .auth-logo h1 { font-size: 1.6rem; color: #333; font-weight: 700; }
+        .auth-logo p { color: #999; font-size: 0.9rem; margin-top: 5px; }
+
+        .form-group { margin-bottom: 18px; }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.875rem;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="number"],
+        input[type="date"],
+        input[type="tel"],
+        select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #ddd;
+            border-radius: 7px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.12);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .btn-primary:hover { transform: translateY(-1px); opacity: 0.95; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .btn-secondary {
+            background: #f5f7fa;
+            color: #667eea;
+            border: 1px solid #667eea;
+            padding: 9px 18px;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover { background: #667eea; color: white; }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: opacity 0.2s;
+        }
+
+        .btn-danger:hover { opacity: 0.9; }
+
+        .alert {
+            padding: 11px 14px;
+            border-radius: 7px;
+            margin-bottom: 15px;
+            font-size: 0.875rem;
+            display: none;
+        }
+
+        .alert.error { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .alert.success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .alert.info { background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; }
+
+        .otp-hint {
+            background: #f0f4ff;
+            border: 1px solid #c3d3ff;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 18px;
+            font-size: 0.875rem;
+            color: #4455aa;
+            line-height: 1.5;
+        }
+
+        .otp-input {
+            font-size: 1.6rem !important;
+            text-align: center;
+            letter-spacing: 0.4em;
+            font-weight: 700;
+        }
+
+        .back-link { text-align: center; margin-top: 14px; font-size: 0.875rem; color: #999; }
+        .back-link a { color: #667eea; cursor: pointer; }
+        .back-link a:hover { text-decoration: underline; }
+
+        /* ─── DASHBOARD ─── */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .header h1 { font-size: 1.25rem; font-weight: 700; }
+
+        .user-info { display: flex; align-items: center; gap: 12px; }
+
+        .user-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid white;
+            color: white;
+            padding: 7px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover { background: rgba(255,255,255,0.35); }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 25px 20px; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #999;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value { font-size: 1.7rem; font-weight: 700; color: #667eea; }
+        .stat-card .value.green { color: #10b981; }
+        .stat-card .value.yellow { color: #f59e0b; }
+        .stat-card .value.red { color: #ef4444; }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-btn {
+            padding: 11px 22px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.925rem;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; font-weight: 600; }
+        .tab-btn:hover:not(.active) { color: #555; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.25s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px 28px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 18px; color: #333; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-row.three { grid-template-columns: repeat(3, 1fr); }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .filter-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+        .table-wrap {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            background: #f5f7fa;
+            padding: 13px 15px;
+            text-align: left;
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #eee;
+        }
+
+        td { padding: 13px 15px; border-bottom: 1px solid #f0f0f0; font-size: 0.875rem; }
+        tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #fafbff; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-PENDING { background: #fff3cd; color: #856404; }
+        .status-PAID { background: #d4edda; color: #155724; }
+        .status-CANCELLED { background: #f8d7da; color: #721c24; }
+        .status-EXPIRED { background: #e2e8f0; color: #475569; }
+
+        .code-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            background: #f5f7fa;
+            padding: 3px 7px;
+            border-radius: 4px;
+        }
+
+        .empty-state { text-align: center; padding: 35px; color: #aaa; }
+        .empty-state .icon { font-size: 2rem; margin-bottom: 8px; }
+
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .field-display {
+            background: #f5f7fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 7px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            min-height: 40px;
+        }
+
+        .danger-zone {
+            background: #fff5f5;
+            border: 1px solid #fca5a5;
+            border-radius: 10px;
+            padding: 22px 28px;
+        }
+
+        .danger-zone h2 { color: #dc2626; }
+        .danger-zone p { color: #666; font-size: 0.875rem; margin: 10px 0 15px; line-height: 1.6; }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            max-width: 420px;
+            width: 95%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .modal h3 { font-size: 1.1rem; margin-bottom: 10px; color: #dc2626; }
+        .modal p { color: #666; font-size: 0.875rem; line-height: 1.6; margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+        .toast {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: white;
+            border-radius: 10px;
+            padding: 13px 18px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            font-size: 0.875rem;
+            z-index: 9999;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-left: 4px solid #667eea;
+            max-width: 320px;
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+
+        .spinner {
+            border: 2px solid #f0f0f0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            width: 16px; height: 16px;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .filters-grid { grid-template-columns: repeat(2, 1fr); }
+            .profile-grid, .form-row { grid-template-columns: 1fr; }
+            .form-row.three { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .stats { grid-template-columns: 1fr 1fr; }
+            .filters-grid { grid-template-columns: 1fr 1fr; }
+            .auth-card { padding: 25px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="loginPage" class="auth-container">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <span class="icon">💸</span>
+            <h1>Okane Transfer</h1>
+            <p>Espace Client — Connexion</p>
+        </div>
+        <div class="alert error" id="loginError"></div>
+        <div class="form-group">
+            <label>Nom d'utilisateur</label>
+            <input type="text" id="loginUsername" placeholder="Votre identifiant" autocomplete="username">
+        </div>
+        <div class="form-group">
+            <label>Mot de passe</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button class="btn-primary" onclick="doLogin()">Se connecter</button>
+    </div>
+</div>
+
+<!-- ═══════════════ OTP ═══════════════ -->
+<div id="otpPage" class="auth-container" style="display:none">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <span class="icon">🔐</span>
+            <h1>Vérification 2FA</h1>
+            <p>Authentification à deux facteurs</p>
+        </div>
+        <div class="otp-hint">
+            📱 Un code OTP a été généré.<br>
+            Consultez les logs Tomcat pour récupérer votre code à 6 chiffres.<br>
+            <small style="color:#888">Le code expire dans 5 minutes.</small>
+        </div>
+        <div class="alert error" id="otpError"></div>
+        <div class="form-group">
+            <label>Code OTP (6 chiffres)</label>
+            <input type="text" id="otpCode" class="otp-input" placeholder="000000" maxlength="6" autocomplete="one-time-code">
+        </div>
+        <button class="btn-primary" onclick="doVerifyOtp()">Vérifier le code</button>
+        <div class="back-link">
+            <a onclick="backToLogin()">← Retour à la connexion</a>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div id="dashboard" style="display:none">
+    <div class="header">
+        <h1>💸 Okane Transfer — Espace Client</h1>
+        <div class="user-info">
+            <span class="user-badge" id="navUsername">Client</span>
+            <button class="logout-btn" onclick="doLogout()">Déconnexion</button>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total transferts</h3>
+                <div class="value" id="statTotal">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>En attente</h3>
+                <div class="value yellow" id="statPending">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>Payés</h3>
+                <div class="value green" id="statPaid">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>Annulés</h3>
+                <div class="value red" id="statCancelled">—</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('transfers', this)">📋 Mes Transferts</button>
+            <button class="tab-btn" onclick="switchTab('profile', this)">👤 Mon Profil</button>
+        </div>
+
+        <!-- ══ TAB TRANSFERTS ══ -->
+        <div id="tab-transfers" class="tab-content active">
+
+            <!-- 1. Recherche par code -->
+            <div class="card">
+                <h2>🔎 Rechercher un transfert par code</h2>
+                <div class="alert" id="searchAlert"></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Code de transfert</label>
+                        <input type="text" id="searchCode" placeholder="ex: TRF-TEST-001">
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:flex-end;">
+                        <button class="btn-primary" style="width:auto;padding:11px 24px" onclick="searchByCode()">Rechercher</button>
+                    </div>
+                </div>
+                <div id="searchResult" style="display:none; margin-top:15px;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Bénéficiaire</th>
+                            <th>Montant</th>
+                            <th>Devise</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                        </tr>
+                        </thead>
+                        <tbody id="searchResultBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. Filtres -->
+            <div class="card">
+                <h2>🔍 Filtres avancés</h2>
+                <div class="filters-grid">
+                    <div class="form-group">
+                        <label>Statut</label>
+                        <select id="fStatut">
+                            <option value="">Tous les statuts</option>
+                            <option value="PENDING">En attente</option>
+                            <option value="PAID">Payé</option>
+                            <option value="CANCELLED">Annulé</option>
+                            <option value="EXPIRED">Expiré</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date début</label>
+                        <input type="date" id="fDateDebut">
+                    </div>
+                    <div class="form-group">
+                        <label>Date fin</label>
+                        <input type="date" id="fDateFin">
+                    </div>
+                    <div class="form-group">
+                        <label>Montant min (€)</label>
+                        <input type="number" id="fMontantMin" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Montant max (€)</label>
+                        <input type="number" id="fMontantMax" placeholder="99999" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Pays source</label>
+                        <input type="text" id="fPaysSource" placeholder="ex: FR" maxlength="2">
+                    </div>
+                    <div class="form-group">
+                        <label>Pays destination</label>
+                        <input type="text" id="fPaysDestination" placeholder="ex: MA" maxlength="2">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-secondary" onclick="clearFilters()">Réinitialiser</button>
+                    <button class="btn-primary" style="width:auto;padding:10px 22px" onclick="loadTransfers()">Appliquer les filtres</button>
+                </div>
+            </div>
+
+            <!-- 3. Tableau -->
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Bénéficiaire</th>
+                        <th>Téléphone</th>
+                        <th>Montant</th>
+                        <th>Devise</th>
+                        <th>Statut</th>
+                        <th>Date</th>
+                    </tr>
+                    </thead>
+                    <tbody id="transfersTbody"></tbody>
+                </table>
+                <div id="transfersEmpty" class="empty-state" style="display:none">
+                    <div class="icon">📭</div>
+                    <p>Aucun transfert trouvé pour ces critères</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ══ TAB PROFIL ══ -->
+        <div id="tab-profile" class="tab-content">
+
+            <!-- Informations -->
+            <div class="card">
+                <h2>👤 Informations personnelles</h2>
+                <div class="profile-grid">
+                    <div class="form-group">
+                        <label>Nom d'utilisateur</label>
+                        <div class="field-display" id="pUsername">—</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <div class="field-display" id="pEmail">—</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Prénom</label>
+                        <div class="field-display" id="pFirstName">—</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nom</label>
+                        <div class="field-display" id="pLastName">—</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Téléphone</label>
+                        <div class="field-display" id="pPhone">—</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Rôle</label>
+                        <div class="field-display" style="color:#667eea;font-weight:600">CLIENT</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modifier -->
+            <div class="card">
+                <h2>✏️ Modifier le profil</h2>
+                <div class="alert" id="profileAlert"></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prénom</label>
+                        <input type="text" id="editFirstName" placeholder="Votre prénom">
+                    </div>
+                    <div class="form-group">
+                        <label>Nom</label>
+                        <input type="text" id="editLastName" placeholder="Votre nom">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Téléphone</label>
+                    <input type="tel" id="editPhone" placeholder="+212XXXXXXXXX">
+                </div>
+                <button class="btn-primary" style="width:auto;padding:11px 26px" onclick="updateProfile()">
+                    Sauvegarder les modifications
+                </button>
+            </div>
+
+            <!-- Zone dangereuse -->
+            <div class="danger-zone">
+                <h2>⚠️ Zone dangereuse</h2>
+                <p>La suppression de votre compte est <strong>irréversible</strong>. Vos données personnelles seront anonymisées conformément au <strong>RGPD</strong>.</p>
+                <button class="btn-danger" onclick="showDeleteModal()">Supprimer mon compte</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal suppression compte -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+        <h3>⚠️ Confirmer la suppression</h3>
+        <p>
+            Êtes-vous sûr de vouloir supprimer votre compte ?<br>
+            Cette action est <strong>irréversible</strong>. Toutes vos données personnelles seront anonymisées conformément au RGPD.
+        </p>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="hideDeleteModal()">Annuler</button>
+            <button class="btn-danger" onclick="deleteAccount()">Confirmer la suppression</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+    const API = 'http://localhost:8080/okane_transfer/api';
+    let token = localStorage.getItem('okane_client_token') || '';
+    let pendingUsername = '';
+
+    // ═══ LOGIN ═══
+    async function doLogin() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errEl = document.getElementById('loginError');
+        errEl.style.display = 'none';
+
+        if (!username || !password) {
+            errEl.textContent = 'Veuillez remplir tous les champs.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                errEl.textContent = data.message || 'Identifiants incorrects.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (data.data.requiresOtp === true) {
+                pendingUsername = username;
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('otpPage').style.display = 'flex';
+                document.getElementById('otpCode').value = '';
+                document.getElementById('otpError').style.display = 'none';
+                setTimeout(() => document.getElementById('otpCode').focus(), 100);
+            } else {
+                token = data.data.token;
+                localStorage.setItem('okane_client_token', token);
+                showDashboard(data.data.username);
+            }
+
+
+
+        } catch (e) {
+            errEl.textContent = 'Impossible de contacter le serveur.';
+            errEl.style.display = 'block';
+        }
+    }
+
+    // ═══ VERIFY OTP ═══
+    async function doVerifyOtp() {
+        const otpCode = document.getElementById('otpCode').value.trim();
+        const errEl = document.getElementById('otpError');
+        errEl.style.display = 'none';
+
+        if (!otpCode || otpCode.length !== 6) {
+            errEl.textContent = 'Le code OTP doit contenir 6 chiffres.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: pendingUsername, otpCode })
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                errEl.textContent = data.message || 'Code OTP invalide ou expiré.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            token = data.data.token;
+            localStorage.setItem('okane_client_token', token);
+            showDashboard(data.data.username);
+
+        } catch (e) {
+            errEl.textContent = 'Erreur de vérification.';
+            errEl.style.display = 'block';
+        }
+    }
+
+    function backToLogin() {
+        document.getElementById('otpPage').style.display = 'none';
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('otpCode').value = '';
+        document.getElementById('otpError').style.display = 'none';
+    }
+
+    function doLogout() {
+        localStorage.removeItem('okane_client_token');
+        token = '';
+        pendingUsername = '';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('otpPage').style.display = 'none';
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('loginPassword').value = '';
+    }
+
+    async function showDashboard(username) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('otpPage').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('navUsername').textContent = username;
+        await loadProfile();
+        await loadTransfers();
+    }
+
+    // ═══ PROFIL ═══
+    async function loadProfile() {
+        try {
+            const res = await fetch(`${API}/client/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) return;
+            const d = await res.json();
+            document.getElementById('pUsername').textContent = d.username || '—';
+            document.getElementById('pEmail').textContent = d.email || '—';
+            document.getElementById('pFirstName').textContent = d.firstName || '—';
+            document.getElementById('pLastName').textContent = d.lastName || '—';
+            document.getElementById('pPhone').textContent = d.phone || '—';
+            document.getElementById('editFirstName').value = d.firstName || '';
+            document.getElementById('editLastName').value = d.lastName || '';
+            document.getElementById('editPhone').value = d.phone || '';
+            document.getElementById('navUsername').textContent = d.username;
+        } catch (e) { console.error(e); }
+    }
+
+    async function updateProfile() {
+        const firstName = document.getElementById('editFirstName').value.trim();
+        const lastName = document.getElementById('editLastName').value.trim();
+        const phone = document.getElementById('editPhone').value.trim();
+        const alertEl = document.getElementById('profileAlert');
+
+        const params = new URLSearchParams();
+        if (firstName) params.append('firstName', firstName);
+        if (lastName) params.append('lastName', lastName);
+        if (phone) params.append('phone', phone);
+
+        try {
+            const res = await fetch(`${API}/client/profile?${params}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alertEl.textContent = '✓ Profil mis à jour avec succès';
+                alertEl.className = 'alert success';
+                alertEl.style.display = 'block';
+                await loadProfile();
+                setTimeout(() => alertEl.style.display = 'none', 4000);
+                showToast('✓ Profil mis à jour', 'success');
+            } else {
+                alertEl.textContent = '✗ Erreur lors de la mise à jour';
+                alertEl.className = 'alert error';
+                alertEl.style.display = 'block';
+            }
+        } catch (e) {
+            alertEl.textContent = '✗ Erreur réseau';
+            alertEl.className = 'alert error';
+            alertEl.style.display = 'block';
+        }
+    }
+
+    // ═══ RECHERCHE PAR CODE ═══
+    async function searchByCode() {
+        const code = document.getElementById('searchCode').value.trim();
+        const alertEl = document.getElementById('searchAlert');
+        const resultDiv = document.getElementById('searchResult');
+        alertEl.style.display = 'none';
+        resultDiv.style.display = 'none';
+
+        if (!code) {
+            alertEl.textContent = 'Veuillez entrer un code de transfert.';
+            alertEl.className = 'alert error';
+            alertEl.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/client/transfers/${code}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.status === 404) {
+                alertEl.textContent = '✗ Transfert introuvable avec ce code.';
+                alertEl.className = 'alert error';
+                alertEl.style.display = 'block';
+                return;
+            }
+
+            if (res.status === 403) {
+                alertEl.textContent = '✗ Ce transfert ne vous appartient pas.';
+                alertEl.className = 'alert error';
+                alertEl.style.display = 'block';
+                return;
+            }
+
+            const t = await res.json();
+            document.getElementById('searchResultBody').innerHTML = `
+                <tr>
+                    <td><span class="code-cell">${t.transferCode || '—'}</span></td>
+                    <td>${t.recipientName || '—'}</td>
+                    <td><strong>${t.amount ? t.amount.toLocaleString('fr-FR') : '—'}</strong></td>
+                    <td>${t.currency || '—'}</td>
+                    <td><span class="status-badge status-${t.status}">${t.status}</span></td>
+                    <td style="color:#888;font-size:0.8rem">${formatDate(t.createdAt)}</td>
+                </tr>
+            `;
+            resultDiv.style.display = 'block';
+            alertEl.textContent = '✓ Transfert trouvé.';
+            alertEl.className = 'alert success';
+            alertEl.style.display = 'block';
+
+        } catch (e) {
+            alertEl.textContent = '✗ Erreur réseau.';
+            alertEl.className = 'alert error';
+            alertEl.style.display = 'block';
+        }
+    }
+
+    // ═══ TRANSFERTS ═══
+    async function loadTransfers() {
+        const tbody = document.getElementById('transfersTbody');
+        const empty = document.getElementById('transfersEmpty');
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa"><span class="spinner"></span>Chargement...</td></tr>`;
+        empty.style.display = 'none';
+
+        const statut = document.getElementById('fStatut').value;
+        const dateDebut = document.getElementById('fDateDebut').value;
+        const dateFin = document.getElementById('fDateFin').value;
+        const montantMin = document.getElementById('fMontantMin').value;
+        const montantMax = document.getElementById('fMontantMax').value;
+        const paysSource = document.getElementById('fPaysSource').value;
+        const paysDestination = document.getElementById('fPaysDestination').value;
+
+        const hasFilter = statut || dateDebut || dateFin || montantMin || montantMax || paysSource || paysDestination;
+        let url = `${API}/client/transfers`;
+
+        if (hasFilter) {
+            const p = new URLSearchParams();
+            if (statut) p.append('statut', statut);
+            if (dateDebut) p.append('dateDebut', dateDebut);
+            if (dateFin) p.append('dateFin', dateFin);
+            if (montantMin) p.append('montantMin', montantMin);
+            if (montantMax) p.append('montantMax', montantMax);
+            if (paysSource) p.append('paysSource', paysSource);
+            if (paysDestination) p.append('paysDestination', paysDestination);
+            url = `${API}/client/transfers/filter?${p}`;
+        }
+
+        try {
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) throw new Error('Erreur API');
+            const transfers = await res.json();
+
+            // Mise à jour stats
+            document.getElementById('statTotal').textContent = transfers.length;
+            document.getElementById('statPending').textContent = transfers.filter(t => t.status === 'PENDING').length;
+            document.getElementById('statPaid').textContent = transfers.filter(t => t.status === 'PAID').length;
+            document.getElementById('statCancelled').textContent = transfers.filter(t => t.status === 'CANCELLED').length;
+
+            if (!transfers.length) {
+                tbody.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+
+            tbody.innerHTML = transfers.map(t => `
+                <tr>
+                    <td><span class="code-cell">${t.transferCode || '—'}</span></td>
+                    <td>${t.recipientName || '—'}</td>
+                    <td style="font-size:0.8rem;color:#888">${t.recipientPhone || '—'}</td>
+                    <td><strong>${t.amount ? t.amount.toLocaleString('fr-FR') : '—'}</strong></td>
+                    <td>${t.currency || '—'}</td>
+                    <td><span class="status-badge status-${t.status}">${t.status}</span></td>
+                    <td style="color:#888;font-size:0.8rem">${formatDate(t.createdAt)}</td>
+                </tr>
+            `).join('');
+
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#c33;padding:20px">Erreur de chargement. Vérifiez votre connexion.</td></tr>`;
+        }
+    }
+
+    function clearFilters() {
+        ['fStatut','fDateDebut','fDateFin','fMontantMin','fMontantMax','fPaysSource','fPaysDestination'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        loadTransfers();
+    }
+
+    // ═══ SUPPRESSION COMPTE ═══
+    function showDeleteModal() { document.getElementById('deleteModal').classList.add('show'); }
+    function hideDeleteModal() { document.getElementById('deleteModal').classList.remove('show'); }
+
+    async function deleteAccount() {
+        try {
+            const res = await fetch(`${API}/client/account`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                hideDeleteModal();
+                showToast('✓ Compte supprimé conformément au RGPD', 'success');
+                setTimeout(() => doLogout(), 2500);
+            } else {
+                showToast('✗ Erreur lors de la suppression', 'error');
+            }
+        } catch (e) { showToast('✗ Erreur réseau', 'error'); }
+    }
+
+    // ═══ UTILS ═══
+    function switchTab(name, btn) {
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${name}`).classList.add('active');
+        if (name === 'profile') loadProfile();
+        if (name === 'transfers') loadTransfers();
+    }
+
+    function formatDate(d) {
+        if (!d) return '—';
+        try { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }); }
+        catch (e) { return d; }
+    }
+
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast ${type} show`;
+        setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    // ═══ KEYBOARD ═══
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        if (document.getElementById('otpPage').style.display !== 'none') doVerifyOtp();
+        else if (document.getElementById('loginPage').style.display !== 'none') doLogin();
+    });
+
+    // ═══ AUTO LOGIN ═══
+    if (token) {
+        fetch(`${API}/client/profile`, { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(d => showDashboard(d.username))
+            .catch(() => { localStorage.removeItem('okane_client_token'); token = ''; });
+    }
+</script>
+</body>
+</html>

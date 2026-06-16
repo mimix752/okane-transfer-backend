@@ -1,31 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:mvc="http://www.springframework.org/schema/mvc"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
        xsi:schemaLocation="
            http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans.xsd
-           http://www.springframework.org/schema/mvc
-           http://www.springframework.org/schema/mvc/spring-mvc.xsd
            http://www.springframework.org/schema/context
-           http://www.springframework.org/schema/context/spring-context.xsd">
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/mvc
+           http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-    <context:component-scan base-package="com.okanetransfer.controller,
-                                          com.okanetransfer.config">
-        <context:exclude-filter type="assignable"
-            expression="com.okanetransfer.config.SecurityConfig"/>
-        <context:exclude-filter type="assignable"
-            expression="com.okanetransfer.config.PersistenceConfig"/>
+    <!-- Let Tomcat serve static files (.html, .css, .js, etc.) -->
+    <mvc:default-servlet-handler/>
+
+    <!-- Controllers -->
+    <context:component-scan base-package="com.okanetransfer.controller"
+                            use-default-filters="false">
+        <context:include-filter type="annotation"
+                                expression="org.springframework.stereotype.Controller"/>
+        <context:include-filter type="annotation"
+                                expression="org.springframework.web.bind.annotation.RestController"/>
     </context:component-scan>
 
-    <mvc:annotation-driven>
-        <mvc:message-converters register-defaults="false">
-            <ref bean="mappingJackson2HttpMessageConverter"/>
-        </mvc:message-converters>
-    </mvc:annotation-driven>
+    <!-- WebConfig + OpenApiConfig dans MVC context -->
+    <context:component-scan base-package="com.okanetransfer.config"
+                            use-default-filters="false">
+        <context:include-filter type="assignable"
+                                expression="com.okanetransfer.config.WebConfig"/>
+        <context:include-filter type="assignable"
+                                expression="com.okanetransfer.config.OpenApiConfig"/>
+    </context:component-scan>
 
-    <mvc:resources mapping="/swagger-ui/**" location="classpath:/META-INF/resources/webjars/swagger-ui/"/>
-    <mvc:resources mapping="/webjars/**"    location="classpath:/META-INF/resources/webjars/"/>
+    <!-- SpringDoc dans MVC context -->
+    <bean class="org.springdoc.core.configuration.SpringDocConfiguration"/>
+    <bean class="org.springdoc.core.properties.SpringDocConfigProperties"/>
+    <bean class="org.springdoc.core.properties.SwaggerUiOAuthProperties"/>
+    <bean class="org.springdoc.webmvc.core.configuration.SpringDocWebMvcConfiguration"/>
 
 </beans>

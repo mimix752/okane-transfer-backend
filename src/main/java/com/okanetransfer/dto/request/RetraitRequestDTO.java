@@ -1,15 +1,37 @@
 package com.okanetransfer.dto.request;
 
-import lombok.Data;
 
-import jakarta.validation.constraints.NotBlank;
-
-@Data
 public class RetraitRequestDTO {
 
-    @NotBlank
     private String transferCode;
 
-    @NotBlank
-    private String recipientPhone;
+    private String senderPhone;
+    private String senderCIN;
+
+    public RetraitRequestDTO() {
+    }
+
+    public String getTransferCode() {
+        return transferCode;
+    }
+
+    public void setTransferCode(String transferCode) {
+        this.transferCode = transferCode;
+    }
+
+    public String getSenderPhone() {
+        return senderPhone;
+    }
+
+    public void setSenderPhone(String senderPhone) {
+        this.senderPhone = senderPhone;
+    }
+
+    public String getSenderCIN() {
+        return senderCIN;
+    }
+
+    public void setSenderCIN(String senderCIN) {
+        this.senderCIN = senderCIN;
+    }
 }

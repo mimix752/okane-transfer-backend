@@ -1,14 +1,13 @@
 package com.okanetransfer.entity;
 
-import com.okanetransfer.enums.Currency;
+import com.okanetransfer.entity.Currency;
 import com.okanetransfer.enums.TransferStatus;
-import lombok.Data;
+import com.okanetransfer.security.CryptoConverter;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
 @Entity
 @Table(name = "transfers")
 public class Transfer {
@@ -17,26 +16,59 @@ public class Transfer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, name = "transfer_code")
     private String transferCode;
 
     @ManyToOne
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipient_user_id", nullable = true)
+    private User recipientUser;
+
+    public String getSenderPhone() {
+        return senderPhone;
+    }
+
+    @Column(name = "sender_phone")
+    private String senderPhone;
+
+    @Column(name = "sender_cin")
+    private String senderCIN;
+
+    @Column(name = "recipient_name")
     private String recipientName;
+
+    @Column(name = "recipient_phone")
     private String recipientPhone;
+
+    @Column(name = "recipient_cin")
+    private String recipientCIN;
+
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    @Column(name = "recipient_country")
+    private String recipientCountry;
+
+    @Column(name = "sender_country")
+    private String senderCountry;
 
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
 
-    @Enumerated(EnumType.STRING)
+    @Column(precision = 18, scale = 2)
+    private BigDecimal fees = BigDecimal.ZERO;
+
+    @ManyToOne
+    @JoinColumn(name = "currency_id")
     private Currency currency;
 
-    @Column(precision = 18, scale = 2)
+    @Column(name = "converted_amount", precision = 18, scale = 2)
     private BigDecimal convertedAmount;
 
-    @Enumerated(EnumType.STRING)
+    @ManyToOne
+    @JoinColumn(name = "target_currency")
     private Currency targetCurrency;
 
     @Enumerated(EnumType.STRING)
@@ -47,12 +79,106 @@ public class Transfer {
     @JoinColumn(name = "agency_id")
     private Agency agency;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_user_id", nullable = true)
+    private User senderUser;
+
+
+
+    public Transfer() {}
+
+    public User getSenderUser() {
+        return senderUser;
+    }
+
+    public void setSenderUser(User senderUser) {
+        this.senderUser = senderUser;
+    }
+
+    public Transfer(Long id, String transferCode, User sender, User recipientUser, String senderPhone, String senderCIN, String recipientName, String recipientPhone, String recipientCIN, String recipientCountry, String senderCountry, BigDecimal amount, BigDecimal fees, Currency currency, BigDecimal convertedAmount, Currency targetCurrency, TransferStatus status, Agency agency, LocalDateTime createdAt, LocalDateTime updatedAt, User senderUser) {
+        this.id = id;
+        this.transferCode = transferCode;
+        this.sender = sender;
+        this.recipientUser = recipientUser;
+        this.senderPhone = senderPhone;
+        this.senderCIN = senderCIN;
+        this.recipientName = recipientName;
+        this.recipientPhone = recipientPhone;
+        this.recipientCIN = recipientCIN;
+        this.recipientCountry = recipientCountry;
+        this.senderCountry = senderCountry;
+        this.amount = amount;
+        this.fees = fees;
+        this.currency = currency;
+        this.convertedAmount = convertedAmount;
+        this.targetCurrency = targetCurrency;
+        this.status = status;
+        this.agency = agency;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.senderUser = senderUser;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getTransferCode() { return transferCode; }
+    public void setTransferCode(String transferCode) { this.transferCode = transferCode; }
+    public User getSender() { return sender; }
+    public void setSender(User sender) { this.sender = sender; }
+    public String getSenderCIN() { return senderCIN; }
+    public void setSenderCIN(String senderCIN) { this.senderCIN = senderCIN; }
+    public String getRecipientName() { return recipientName; }
+    public void setRecipientName(String recipientName) { this.recipientName = recipientName; }
+    public String getRecipientPhone() { return recipientPhone; }
+    public void setRecipientPhone(String recipientPhone) { this.recipientPhone = recipientPhone; }
+    public String getRecipientCIN() { return recipientCIN; }
+    public void setRecipientCIN(String recipientCIN) { this.recipientCIN = recipientCIN; }
+    public String getRecipientCountry() { return recipientCountry; }
+    public void setRecipientCountry(String recipientCountry) { this.recipientCountry = recipientCountry; }
+    public String getSenderCountry() { return senderCountry; }
+    public void setSenderCountry(String senderCountry) { this.senderCountry = senderCountry; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public BigDecimal getFees() { return fees; }
+    public void setFees(BigDecimal fees) { this.fees = fees; }
+    public Currency getCurrency() { return currency; }
+    public void setCurrency(Currency currency) { this.currency = currency; }
+    public BigDecimal getConvertedAmount() { return convertedAmount; }
+    public void setConvertedAmount(BigDecimal convertedAmount) { this.convertedAmount = convertedAmount; }
+    public Currency getTargetCurrency() { return targetCurrency; }
+    public void setTargetCurrency(Currency targetCurrency) { this.targetCurrency = targetCurrency; }
+    public TransferStatus getStatus() { return status; }
+    public void setStatus(TransferStatus status) { this.status = status; }
+    public Agency getAgency() { return agency; }
+    public void setAgency(Agency agency) { this.agency = agency; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     @PrePersist
     void prePersist() { this.createdAt = LocalDateTime.now(); }
 
     @PreUpdate
     void preUpdate() { this.updatedAt = LocalDateTime.now(); }
+
+    public void setSenderPhone(String normalizedSenderPhone) {
+        this.senderPhone = normalizedSenderPhone;
+    }
+
+
+    public User getRecipientUser() {
+        return recipientUser;
+    }
+
+    public void setRecipientUser(User recipientUser) {
+        this.recipientUser = recipientUser;
+    }
+
 }

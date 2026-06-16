@@ -1,44 +1,132 @@
 package com.okanetransfer.repository;
 
 import com.okanetransfer.entity.Transfer;
+import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.TransferStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-@Transactional
-public class TransferRepository {
+public interface TransferRepository extends JpaRepository<Transfer, Long> {
 
-    @PersistenceContext
-    private EntityManager em;
+    // ── Méthodes de base ─────────────────────────────────────
 
-    public Transfer save(Transfer t) { em.persist(t); return t; }
+    Optional<Transfer> findByTransferCode(String code);
 
-    public Optional<Transfer> findById(Long id) {
-        return Optional.ofNullable(em.find(Transfer.class, id));
-    }
+    List<Transfer> findBySenderId(Long senderId);
 
-    public Optional<Transfer> findByCode(String code) {
-        return em.createQuery("SELECT t FROM Transfer t WHERE t.transferCode = :code", Transfer.class)
-                .setParameter("code", code).getResultStream().findFirst();
-    }
+    List<Transfer> findByStatus(TransferStatus status);
 
-    public List<Transfer> findBySenderId(Long senderId) {
-        return em.createQuery("SELECT t FROM Transfer t WHERE t.sender.id = :id", Transfer.class)
-                .setParameter("id", senderId).getResultList();
-    }
+    List<Transfer> findBySenderUserOrderByCreatedAtDesc(User senderUser);
+    // ── Par téléphone bénéficiaire ───────────────────────────
 
-    public List<Transfer> findByStatus(TransferStatus status) {
-        return em.createQuery("SELECT t FROM Transfer t WHERE t.status = :s", Transfer.class)
-                .setParameter("s", status).getResultList();
-    }
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.recipientPhone = :phone " +
+            "AND t.status = 'PENDING' " +
+            "ORDER BY t.createdAt DESC")
+    Optional<Transfer> findByRecipientPhone(
+            @Param("phone") String phone);
 
-    public List<Transfer> findAll() {
-        return em.createQuery("SELECT t FROM Transfer t", Transfer.class).getResultList();
-    }
+    // ── Par code (alias) ─────────────────────────────────────
+
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.transferCode = :code")
+    Optional<Transfer> findByCode(@Param("code") String code);
+
+    // ── Par période ──────────────────────────────────────────
+
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.createdAt >= :start " +
+            "AND t.createdAt <= :end " +
+            "ORDER BY t.createdAt DESC")
+    List<Transfer> findByCreatedAtBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    // ── Par agence et période ────────────────────────────────
+
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.agency.id = :agencyId " +
+            "AND t.createdAt >= :start " +
+            "AND t.createdAt <= :end " +
+            "ORDER BY t.createdAt DESC")
+    List<Transfer> findByAgencyIdAndCreatedAtBetween(
+            @Param("agencyId") Long agencyId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    // ── Par corridor et période ──────────────────────────────
+
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.senderCountry = :senderCountry " +
+            "AND t.recipientCountry = :recipientCountry " +
+            "AND t.createdAt >= :start " +
+            "AND t.createdAt <= :end " +
+            "ORDER BY t.createdAt DESC")
+    List<Transfer> findByCorridorAndCreatedAtBetween(
+            @Param("senderCountry") String senderCountry,
+            @Param("recipientCountry") String recipientCountry,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    // ── Somme montants par période ───────────────────────────
+
+    @Query("SELECT COALESCE(SUM(t.amount), 0) " +
+            "FROM Transfer t " +
+            "WHERE t.createdAt >= :start " +
+            "AND t.createdAt <= :end")
+    BigDecimal sumAmountByCreatedAtBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    // ── Somme fees par période ───────────────────────────────
+
+    @Query("SELECT COALESCE(SUM(t.fees), 0) " +
+            "FROM Transfer t " +
+            "WHERE t.createdAt >= :start " +
+            "AND t.createdAt <= :end")
+    BigDecimal sumFeesByCreatedAtBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    // ── KYC/AML ──────────────────────────────────────────────
+
+    @Query("SELECT COUNT(t) FROM Transfer t " +
+            "WHERE t.senderCIN = :doc " +
+            "AND t.createdAt >= :date")
+    long countBySenderDocumentAndCreatedAtAfter(
+            @Param("doc") String senderDocument,
+            @Param("date") LocalDateTime fromDate);
+
+    @Query("SELECT COALESCE(SUM(t.amount), 0) " +
+            "FROM Transfer t " +
+            "WHERE t.senderCIN = :doc " +
+            "AND t.createdAt >= :date")
+    BigDecimal sumAmountBySenderDocumentAndCreatedAtAfter(
+            @Param("doc") String senderDocument,
+            @Param("date") LocalDateTime fromDate);
+
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.agency.id = :agencyId " +
+            "ORDER BY t.createdAt DESC")
+    Page<Transfer> findByAgencyIdOrderByCreatedAtDesc(
+            @Param("agencyId") Long agencyId,
+            Pageable pageable);
+
+    @Query("SELECT t FROM Transfer t " +
+            "WHERE t.recipientPhone = :phone " +
+            "ORDER BY t.createdAt DESC")
+    List<Transfer> findAllByRecipientPhoneOrderByCreatedAtDesc(@Param("phone") String phone);
+
+    List<Transfer> findBySenderCINOrderByCreatedAtDesc(String senderCIN);
+    List<Transfer> findByRecipientPhoneOrderByCreatedAtDesc(String recipientPhone);
 }

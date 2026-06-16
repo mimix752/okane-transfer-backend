@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Okane Transfer</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#222;min-height:100vh}
+        header{background:#0d1b2a;color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+        .brand{font-size:1.1rem;font-weight:700;letter-spacing:1px}
+        .hinfo{font-size:.82rem;opacity:.75;display:flex;align-items:center;gap:10px}
+        .dot{width:8px;height:8px;border-radius:50%;background:#e74c3c;display:inline-block}
+        .dot.on{background:#2ecc71}
+        nav{background:#162032;display:flex;gap:4px;padding:8px 16px;flex-wrap:wrap}
+        nav button{background:transparent;border:none;color:#aaa;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600;transition:.2s}
+        nav button:hover{background:#1e2d40;color:#fff}
+        nav button.active{background:#1e2d40;color:#fff}
+        .page{max-width:640px;margin:32px auto;padding:0 16px}
+        .card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,.08);margin-bottom:20px}
+        .card-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:18px}
+        .field{margin-bottom:14px}
+        label{display:block;font-size:.8rem;font-weight:600;color:#555;margin-bottom:5px}
+        input,select{width:100%;padding:10px 13px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:.9rem;outline:none;transition:border .2s;background:#fff}
+        input:focus,select:focus{border-color:#0d1b2a}
+        .row{display:flex;gap:12px}
+        .row .field{flex:1}
+        .btn{width:100%;padding:11px;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;transition:.2s;margin-top:4px}
+        .btn:hover{opacity:.85}
+        .btn-dark{background:#0d1b2a;color:#fff}
+        .btn-green{background:#27ae60;color:#fff}
+        .btn-red{background:#e74c3c;color:#fff}
+        .btn-outline{background:transparent;border:1.5px solid #0d1b2a;color:#0d1b2a;margin-top:8px}
+        .btn-sm{width:auto;padding:7px 14px;font-size:.8rem}
+        .msg{padding:11px 14px;border-radius:8px;font-size:.83rem;margin-top:12px;display:none}
+        .ok{background:#eafaf1;border:1px solid #27ae60;color:#1a5c35}
+        .err{background:#fdf0ef;border:1px solid #e74c3c;color:#922b21}
+        .screen{display:none}
+        .screen.active{display:block}
+        .tab{display:none}
+        .tab.active{display:block}
+        .link{color:#0d1b2a;cursor:pointer;text-decoration:underline;font-size:.85rem}
+        .badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.72rem;font-weight:700}
+        .b-pending{background:#fff3cd;color:#856404}
+        .b-paid{background:#d1e7dd;color:#0a3622}
+        .b-cancelled{background:#f8d7da;color:#842029}
+        table{width:100%;border-collapse:collapse;font-size:.85rem}
+        th{text-align:left;padding:8px 10px;background:#f8f9fa;color:#555;font-size:.75rem;text-transform:uppercase}
+        td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+        tr:hover td{background:#fafafa}
+        .tc-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:.88rem}
+        .tc-row:last-child{border-bottom:none}
+        .tc-label{color:#888}
+        .tc-val{font-weight:700;color:#0d1b2a}
+        .amount-big{font-size:1.6rem;font-weight:800;color:#27ae60}
+        .success-box{text-align:center;padding:16px 0}
+        .success-box .icon{font-size:3rem;margin-bottom:10px}
+        .divider{text-align:center;color:#aaa;font-size:.8rem;margin:12px 0}
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">🏦 OKANE TRANSFER</div>
+    <div class="hinfo">
+        <span class="dot" id="hDot"></span>
+        <span id="hUser">Non connecté</span>
+        <button class="btn btn-sm btn-outline" id="btnLogout" onclick="logout()" style="display:none;color:#fff;border-color:#fff">Déconnexion</button>
+    </div>
+</header>
+<nav id="mainNav" style="display:none"></nav>
+
+<div class="page">
+
+    <!-- ══ AUTH SCREEN ══ -->
+    <div class="screen active" id="scrAuth">
+        <div class="card">
+            <div id="tabToggle" style="display:flex;gap:8px;margin-bottom:18px">
+                <button class="btn btn-dark btn-sm" onclick="showAuthTab('login')">Connexion</button>
+                <button class="btn btn-outline btn-sm" onclick="showAuthTab('register')">Inscription</button>
+            </div>
+
+            <!-- LOGIN -->
+            <div class="tab active" id="tabLogin">
+                <div class="card-title">Connexion</div>
+                <div class="field"><label>Nom d'utilisateur</label><input id="lUser" placeholder="ex: admin"/></div>
+                <div class="field"><label>Mot de passe</label><input id="lPass" type="password" placeholder="••••••"/></div>
+                <button class="btn btn-dark" onclick="login()">Se connecter</button>
+                <div class="msg" id="lMsg"></div>
+                <div style="margin-top:14px;text-align:center">
+                    <span class="link" onclick="showScreen('scrPublic')">🔍 Suivre un transfert sans connexion</span>
+                </div>
+            </div>
+
+            <!-- REGISTER -->
+            <div class="tab" id="tabRegister">
+                <div class="card-title">Créer un compte</div>
+                <div class="row">
+                    <div class="field"><label>Nom d'utilisateur</label><input id="rUser" placeholder="ex: jean01"/></div>
+                    <div class="field"><label>Email</label><input id="rEmail" type="email" placeholder="jean@mail.com"/></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Mot de passe</label><input id="rPass" type="password" placeholder="min 6 caractères"/></div>
+                    <div class="field"><label>Téléphone</label><input id="rPhone" placeholder="+33600000000"/></div>
+                </div>
+                <button class="btn btn-green" onclick="register()">S'inscrire</button>
+                <div class="msg" id="rMsg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ ADMIN SCREEN ══ -->
+    <div class="screen" id="scrAdmin">
+
+        <!-- Currencies -->
+        <div class="card" id="adminCurrencies">
+            <div class="card-title">💱 Devises</div>
+            <table id="tblCurrencies"><thead><tr><th>ID</th><th>Code</th><th>Nom</th><th>Taux</th><th>Actif</th></tr></thead><tbody></tbody></table>
+            <div style="margin-top:14px">
+                <div class="row">
+                    <div class="field"><label>Code (3 lettres)</label><input id="cCode" placeholder="EUR" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+                    <div class="field"><label>Nom</label><input id="cName" placeholder="Euro"/></div>
+                    <div class="field"><label>Symbole</label><input id="cSymbol" placeholder="€"/></div>
+                    <div class="field"><label>Taux (vs base)</label><input id="cRate" type="number" step="0.000001" placeholder="1.0"/></div>
+                </div>
+                <button class="btn btn-green btn-sm" onclick="createCurrency()">+ Ajouter devise</button>
+                <div class="msg" id="cMsg"></div>
+            </div>
+        </div>
+
+        <!-- Agencies -->
+        <div class="card">
+            <div class="card-title">🏢 Agences</div>
+            <table id="tblAgencies"><thead><tr><th>ID</th><th>Nom</th><th>Pays</th><th>Destination</th><th>Actif</th></tr></thead><tbody></tbody></table>
+            <div style="margin-top:14px">
+                <div class="row">
+                    <div class="field"><label>Nom</label><input id="agName" placeholder="Agence Paris"/></div>
+                    <div class="field"><label>Adresse</label><input id="agAddr" placeholder="10 Rue de Rivoli"/></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Pays source (2-3 lettres)</label><input id="agCountry" placeholder="FR" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+                    <div class="field"><label>Pays destination</label><input id="agDest" placeholder="MA" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+                    <div class="field"><label>Limite journalière</label><input id="agLimit" type="number" placeholder="50000"/></div>
+                </div>
+                <button class="btn btn-green btn-sm" onclick="createAgency()">+ Créer agence</button>
+                <div class="msg" id="agMsg"></div>
+            </div>
+        </div>
+
+        <!-- Corridors -->
+        <div class="card">
+            <div class="card-title">🛤️ Corridors</div>
+            <table id="tblCorridors"><thead><tr><th>ID</th><th>Source</th><th>Destination</th><th>Devise src</th><th>Devise dest</th><th>Actif</th></tr></thead><tbody></tbody></table>
+            <div style="margin-top:14px">
+                <div class="row">
+                    <div class="field"><label>Pays source</label><input id="coSrc" placeholder="FR" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+                    <div class="field"><label>Pays destination</label><input id="coDest" placeholder="MA" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+                    <div class="field"><label>ID Devise source</label><input id="coSrcCur" type="number" placeholder="1"/></div>
+                    <div class="field"><label>ID Devise destination</label><input id="coDestCur" type="number" placeholder="2"/></div>
+                </div>
+                <button class="btn btn-green btn-sm" onclick="createCorridor()">+ Créer corridor</button>
+                <div class="msg" id="coMsg"></div>
+            </div>
+        </div>
+
+        <!-- Users -->
+        <div class="card">
+            <div class="card-title">👥 Utilisateurs</div>
+            <table id="tblUsers"><thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Rôle</th><th>Actif</th><th>Action</th></tr></thead><tbody></tbody></table>
+            <div style="margin-top:14px">
+                <div class="row">
+                    <div class="field"><label>Username</label><input id="uUser" placeholder="agent01"/></div>
+                    <div class="field"><label>Email</label><input id="uEmail" type="email" placeholder="agent@okane.com"/></div>
+                    <div class="field"><label>Téléphone</label><input id="uPhone" placeholder="+33600000001"/></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Pays</label><input id="uCountry" placeholder="FR" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+                    <div class="field"><label>Rôle</label>
+                        <select id="uRole"><option value="AGENT">AGENT</option><option value="CLIENT">CLIENT</option><option value="ADMIN">ADMIN</option></select>
+                    </div>
+                </div>
+                <button class="btn btn-green btn-sm" onclick="createUser()">+ Créer utilisateur</button>
+                <div class="msg" id="uMsg"></div>
+            </div>
+            <div style="margin-top:14px">
+                <div class="row">
+                    <div class="field"><label>Assigner agent (User ID)</label><input id="assignUserId" type="number" placeholder="5"/></div>
+                    <div class="field"><label>à l'agence (Agency ID)</label><input id="assignAgencyId" type="number" placeholder="1"/></div>
+                </div>
+                <button class="btn btn-dark btn-sm" onclick="assignAgent()">Assigner agent à agence</button>
+                <div class="msg" id="assignMsg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ AGENT SCREEN ══ -->
+    <div class="screen" id="scrAgent">
+
+        <!-- Caisse -->
+        <div class="card">
+            <div class="card-title">🏧 Ma Caisse <span id="caisseStatus" class="badge b-cancelled">FERMÉE</span></div>
+            <div class="field"><label>Mon Agent ID</label><input id="myAgentId" type="number" placeholder="ex: 2"/></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-green btn-sm" onclick="ouvrirCaisse()">Ouvrir</button>
+                <button class="btn btn-dark btn-sm" onclick="voirSolde()">💰 Solde</button>
+                <button class="btn btn-dark btn-sm" onclick="voirHistorique()">📋 Historique</button>
+            </div>
+            <div id="caisseInfo" style="display:none;margin-top:12px;font-size:.88rem"></div>
+            <div class="divider" style="margin-top:14px">── Clôture de caisse ──</div>
+            <div class="field"><label>Solde réel (argent compté en caisse)</label><input id="soldeReel" type="number" step="0.01" placeholder="ex: 15000.00"/></div>
+            <button class="btn btn-red btn-sm" onclick="fermerCaisse()">Fermer & Réconcilier</button>
+            <div class="msg" id="caisseMsg"></div>
+        </div>
+
+        <!-- Envoi -->
+        <div class="card">
+            <div class="card-title">📤 Créer un envoi</div>
+            <div class="row">
+                <div class="field"><label>Nom expéditeur</label><input id="eSnNom" placeholder="Dupont"/></div>
+                <div class="field"><label>Prénom expéditeur</label><input id="eSnPrenom" placeholder="Jean"/></div>
+            </div>
+            <div class="row">
+                <div class="field"><label>CIN/Passeport</label><input id="eSnCin" placeholder="AB123456"/></div>
+                <div class="field"><label>Tél expéditeur</label><input id="eSnTel" placeholder="+33611111111"/></div>
+                <div class="field"><label>Pays exp. (2-3L)</label><input id="eSnPays" placeholder="FR" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+            </div>
+            <div class="divider">── Bénéficiaire ──</div>
+            <div class="row">
+                <div class="field"><label>Nom bénéficiaire</label><input id="eBnNom" placeholder="Alami"/></div>
+                <div class="field"><label>Prénom bénéficiaire</label><input id="eBnPrenom" placeholder="Mohammed"/></div>
+            </div>
+            <div class="row">
+                <div class="field"><label>Tél bénéficiaire</label><input id="eBnTel" placeholder="+212612345678"/></div>
+                <div class="field"><label>Pays bén. (2-3L)</label><input id="eBnPays" placeholder="MA" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+            </div>
+            <div class="divider">── Montant ──</div>
+            <div class="row">
+                <div class="field"><label>Montant</label><input id="eAmount" type="number" placeholder="500"/></div>
+                <div class="field"><label>Devise (ex: EUR)</label><input id="eCurrency" placeholder="EUR" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+                <div class="field"><label>ID Corridor</label><input id="eCorridorId" type="number" placeholder="1"/></div>
+            </div>
+            <button class="btn btn-dark" onclick="creerEnvoi()">Envoyer</button>
+            <div class="msg" id="envoiMsg"></div>
+        </div>
+
+        <!-- Retrait -->
+        <div class="card">
+            <div class="card-title">💸 Retrait</div>
+            <div class="row">
+                <div class="field"><label>Code de transfert</label><input id="rCode" placeholder="TRF-XXXXXXXX" oninput="this.value=this.value.toUpperCase()"/></div>
+                <div class="field"><label>ou Téléphone bénéficiaire</label><input id="rSearchPhone" placeholder="+212612345678"/></div>
+            </div>
+            <button class="btn btn-dark btn-sm" onclick="rechercherTransfert()">Rechercher</button>
+            <div id="transferPreview" style="display:none;margin-top:14px">
+                <div id="transferInfo" class="card" style="background:#f8fafc;box-shadow:none;border:1.5px solid #e0e0e0;padding:16px"></div>
+                <div class="row" style="margin-top:12px">
+                    <div class="field"><label>Téléphone bénéficiaire</label><input id="retraitPhone" placeholder="+212612345678"/></div>
+                    <div class="field"><label>CIN / Passeport bénéficiaire <span style="color:#e74c3c">*</span></label><input id="retraitCIN" placeholder="AB123456"/></div>
+                </div>
+                <button class="btn btn-green" onclick="confirmerRetrait()">✓ Confirmer et payer</button>
+            </div>
+            <div class="msg" id="retraitMsg"></div>
+        </div>
+
+        <!-- Succès retrait -->
+        <div class="card" id="retraitSuccess" style="display:none">
+            <div class="success-box">
+                <div class="icon">✅</div>
+                <h2 style="color:#27ae60;margin-bottom:8px">Paiement effectué</h2>
+                <div class="amount-big" id="successAmt"></div>
+                <p id="successBen" style="color:#666;margin-top:6px"></p>
+                <p id="successRef" style="color:#aaa;font-size:.8rem;margin-top:4px"></p>
+            </div>
+            <button class="btn btn-dark" style="margin-top:16px" onclick="nouveauRetrait()">Nouveau retrait</button>
+        </div>
+    </div>
+
+    <!-- ══ CLIENT SCREEN ══ -->
+    <div class="screen" id="scrClient">
+        <div class="card">
+            <div class="card-title">👤 Mon Profil</div>
+            <div id="clientProfile" style="font-size:.9rem;color:#555">Chargement...</div>
+        </div>
+        <div class="card">
+            <div class="card-title">📋 Mes Transferts</div>
+            <table id="tblClientTransfers">
+                <thead><tr><th>Code</th><th>Bénéficiaire</th><th>Montant</th><th>Statut</th><th>Date</th></tr></thead>
+                <tbody></tbody>
+            </table>
+            <div class="msg" id="clientMsg"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">🔍 Suivre un transfert (sans connexion)</div>
+            <p style="font-size:.8rem;color:#888;margin-bottom:12px">Entrez le code de retrait pour connaître le statut de votre transfert.</p>
+            <div class="field"><label>Code de transfert</label><input id="clientSearchCode" placeholder="TRF-XXXXXXXX" oninput="this.value=this.value.toUpperCase()"/></div>
+            <button class="btn btn-dark btn-sm" onclick="clientSearch()">Rechercher</button>
+            <div id="clientSearchResult" style="margin-top:12px;font-size:.88rem"></div>
+        </div>
+    </div>
+
+    <!-- ══ SUIVI PUBLIC ══ -->
+    <div class="screen" id="scrPublic">
+        <div class="card">
+            <div class="card-title">🔍 Suivi de transfert</div>
+            <p style="font-size:.8rem;color:#888;margin-bottom:12px">Aucune connexion requise. Entrez votre code de retrait.</p>
+            <div class="field"><label>Code de transfert</label><input id="publicCode" placeholder="TRF-XXXXXXXX" oninput="this.value=this.value.toUpperCase()"/></div>
+            <button class="btn btn-dark" onclick="suivrePublic()">Suivre mon transfert</button>
+            <div id="publicResult" style="margin-top:14px"></div>
+            <div style="margin-top:16px;text-align:center">
+                <span class="link" onclick="showScreen('scrAuth')">← Se connecter</span>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /page -->
+
+<script>
+    const BASE = '/okane_transfer_war_exploded';
+    let token = null, userRole = null, username = null, currentTransfer = null;
+
+    // ── utils ─────────────────────────────────────────────────
+    async function api(method, path, body) {
+        const h = {'Content-Type':'application/json'};
+        if (token) h['Authorization'] = 'Bearer ' + token;
+        const r = await fetch(BASE + path, {method, headers:h, body: body ? JSON.stringify(body) : undefined});
+        const j = await r.json().catch(()=>({}));
+        return {ok:r.ok, status:r.status, data:j};
+    }
+    function msg(id, text, isErr) {
+        const el = document.getElementById(id);
+        el.textContent = text; el.style.display = 'block';
+        el.className = 'msg ' + (isErr ? 'err' : 'ok');
+    }
+    function clearMsg(id) { const el=document.getElementById(id); if(el) el.style.display='none'; }
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+    function statusBadge(s) {
+        const map = {PENDING:'b-pending',PAID:'b-paid',CANCELLED:'b-cancelled'};
+        return `<span class="badge ${map[s]||''}">${s}</span>`;
+    }
+
+    // ── auth tab ──────────────────────────────────────────────
+    function showAuthTab(t) {
+        document.getElementById('tabLogin').classList.toggle('active', t==='login');
+        document.getElementById('tabRegister').classList.toggle('active', t==='register');
+    }
+
+    // ── login ─────────────────────────────────────────────────
+    async function login() {
+        clearMsg('lMsg');
+        const {ok,data} = await api('POST','/api/auth/login',{
+            username: document.getElementById('lUser').value.trim(),
+            password: document.getElementById('lPass').value.trim()
+        });
+        if (!ok) return msg('lMsg', data?.message||'Identifiants incorrects', true);
+        applySession(data.data);
+    }
+
+    // ── register ──────────────────────────────────────────────
+    async function register() {
+        clearMsg('rMsg');
+        const {ok,data} = await api('POST','/api/auth/register',{
+            username: document.getElementById('rUser').value.trim(),
+            email:    document.getElementById('rEmail').value.trim(),
+            password: document.getElementById('rPass').value.trim(),
+            phone:    document.getElementById('rPhone').value.trim()
+        });
+        if (!ok) return msg('rMsg', data?.message||'Erreur inscription', true);
+        msg('rMsg','Compte créé ! Connexion en cours...', false);
+        setTimeout(()=>applySession(data.data), 800);
+    }
+
+    // ── session ───────────────────────────────────────────────
+    function applySession(d) {
+        token = d.token; userRole = d.role; username = d.username;
+        document.getElementById('hDot').className = 'dot on';
+        document.getElementById('hUser').textContent = `${username} · ${userRole}`;
+        document.getElementById('btnLogout').style.display = 'inline-block';
+        buildNav();
+        if (userRole === 'ADMIN')  { showScreen('scrAdmin');  loadAdminData(); }
+        if (userRole === 'AGENT')  { showScreen('scrAgent'); }
+        if (userRole === 'CLIENT') { showScreen('scrClient'); loadClientData(); }
+    }
+
+    function logout() {
+        token=null; userRole=null; username=null; currentTransfer=null;
+        document.getElementById('hDot').className='dot';
+        document.getElementById('hUser').textContent='Non connecté';
+        document.getElementById('btnLogout').style.display='none';
+        document.getElementById('mainNav').style.display='none';
+        document.getElementById('mainNav').innerHTML='';
+        showScreen('scrAuth');
+    }
+
+    function buildNav() {
+        const nav = document.getElementById('mainNav');
+        nav.style.display = 'flex'; nav.innerHTML = '';
+        if (userRole==='ADMIN') {
+            nav.innerHTML = '<span style="color:#aaa;font-size:.8rem;padding:7px 8px">ADMIN :</span>';
+        } else if (userRole==='AGENT') {
+            nav.innerHTML = '<span style="color:#aaa;font-size:.8rem;padding:7px 8px">AGENT :</span>';
+        } else {
+            nav.innerHTML = '<span style="color:#aaa;font-size:.8rem;padding:7px 8px">CLIENT :</span>';
+        }
+    }
+</script>
+
+<script>
+    // ── ADMIN ─────────────────────────────────────────────────
+    async function loadAdminData() {
+        loadCurrencies(); loadAgencies(); loadCorridors(); loadUsers();
+    }
+
+    async function loadCurrencies() {
+        const {ok,data} = await api('GET','/api/admin/currencies');
+        if (!ok) return;
+        const rows = (data.data||data).map(c=>`<tr><td>${c.id}</td><td><b>${c.code}</b></td><td>${c.name}</td><td>${c.exchangeRate}</td><td>${c.active?'✅':'❌'}</td></tr>`).join('');
+        document.querySelector('#tblCurrencies tbody').innerHTML = rows || '<tr><td colspan="5" style="color:#aaa">Aucune devise</td></tr>';
+    }
+    async function createCurrency() {
+        clearMsg('cMsg');
+        const {ok,data} = await api('POST','/api/admin/currencies',{
+            code: document.getElementById('cCode').value.trim(),
+            name: document.getElementById('cName').value.trim(),
+            symbol: document.getElementById('cSymbol').value.trim(),
+            exchangeRate: parseFloat(document.getElementById('cRate').value)||1,
+            active: true
+        });
+        if (!ok) return msg('cMsg', data?.message || (data?.data ? Object.values(data.data).join(', ') : 'Erreur'), true);
+        msg('cMsg','Devise créée !', false);
+        loadCurrencies();
+    }
+
+    async function loadAgencies() {
+        const {ok,data} = await api('GET','/api/agencies');
+        if (!ok) return;
+        const rows = (data.data||data).map(a=>`<tr><td>${a.id}</td><td><b>${a.name}</b></td><td>${a.country}</td><td>${a.destinationCountry||'—'}</td><td>${a.active?'✅':'❌'}</td></tr>`).join('');
+        document.querySelector('#tblAgencies tbody').innerHTML = rows || '<tr><td colspan="5" style="color:#aaa">Aucune agence</td></tr>';
+    }
+    async function createAgency() {
+        clearMsg('agMsg');
+        const {ok,data} = await api('POST','/api/agencies',{
+            name: document.getElementById('agName').value.trim(),
+            address: document.getElementById('agAddr').value.trim(),
+            country: document.getElementById('agCountry').value.trim(),
+            destinationCountry: document.getElementById('agDest').value.trim(),
+            dailyLimit: parseFloat(document.getElementById('agLimit').value)||50000
+        });
+        if (!ok) return msg('agMsg', data?.message||'Erreur', true);
+        msg('agMsg',`Agence créée (ID: ${data.data?.id||'?'})`, false);
+        loadAgencies();
+    }
+
+    async function loadCorridors() {
+        const {ok,data} = await api('GET','/api/admin/corridors');
+        if (!ok) return;
+        const rows = (data.data||data).map(c=>`<tr><td>${c.id}</td><td>${c.sourceCountry}</td><td>${c.destinationCountry}</td><td>${c.sourceCurrencyId||'—'}</td><td>${c.destinationCurrencyId||'—'}</td><td>${c.active?'✅':'❌'}</td></tr>`).join('');
+        document.querySelector('#tblCorridors tbody').innerHTML = rows || '<tr><td colspan="6" style="color:#aaa">Aucun corridor</td></tr>';
+    }
+    async function createCorridor() {
+        clearMsg('coMsg');
+        const {ok,data} = await api('POST','/api/admin/corridors',{
+            sourceCountry: document.getElementById('coSrc').value.trim(),
+            destinationCountry: document.getElementById('coDest').value.trim(),
+            sourceCurrencyId: parseInt(document.getElementById('coSrcCur').value),
+            destinationCurrencyId: parseInt(document.getElementById('coDestCur').value),
+            active: true
+        });
+        if (!ok) return msg('coMsg', data?.message||'Erreur', true);
+        msg('coMsg',`Corridor créé (ID: ${data.data?.id||'?'})`, false);
+        loadCorridors();
+    }
+
+    async function loadUsers() {
+        const {ok,data} = await api('GET','/api/admin/users');
+        if (!ok) return;
+        const list = data.data?.content || data.data || [];
+        const rows = list.map(u=>`<tr><td>${u.id}</td><td><b>${u.username}</b></td><td>${u.email}</td><td>${u.role}</td><td>${u.enabled?'✅':'❌'}</td><td><button class="btn btn-sm btn-outline" onclick="toggleUser(${u.id})" style="padding:3px 8px;font-size:.75rem">${u.enabled?'Désactiver':'Activer'}</button></td></tr>`).join('');
+        document.querySelector('#tblUsers tbody').innerHTML = rows || '<tr><td colspan="6" style="color:#aaa">Aucun utilisateur</td></tr>';
+    }
+    async function createUser() {
+        clearMsg('uMsg');
+        const {ok,data} = await api('POST','/api/admin/users',{
+            username: document.getElementById('uUser').value.trim(),
+            email: document.getElementById('uEmail').value.trim(),
+            phone: document.getElementById('uPhone').value.trim(),
+            country: document.getElementById('uCountry').value.trim(),
+            role: document.getElementById('uRole').value
+        });
+        if (!ok) return msg('uMsg', data?.message||'Erreur', true);
+        msg('uMsg',`Utilisateur créé (ID: ${data.data?.id||'?'}) — mot de passe temporaire dans les logs`, false);
+        loadUsers();
+    }
+    async function toggleUser(id) {
+        await api('PATCH',`/api/admin/users/${id}/toggle`);
+        loadUsers();
+    }
+    async function assignAgent() {
+        clearMsg('assignMsg');
+        const uid = document.getElementById('assignUserId').value.trim();
+        const aid = document.getElementById('assignAgencyId').value.trim();
+        if (!uid||!aid) return msg('assignMsg','Remplissez les deux champs', true);
+        const {ok,data} = await api('POST',`/api/agencies/${aid}/agents?userId=${uid}`);
+        if (!ok) return msg('assignMsg', data?.message||'Erreur', true);
+        msg('assignMsg','Agent assigné avec succès !', false);
+    }
+</script>
+
+<script>
+    // ── AGENT ─────────────────────────────────────────────────
+    async function ouvrirCaisse() {
+        clearMsg('caisseMsg');
+        const id = document.getElementById('myAgentId').value.trim();
+        if (!id) return msg('caisseMsg','Entrez votre Agent ID', true);
+        const {status} = await api('POST',`/api/caisse/ouvrir/${id}`);
+        if (status === 400) return msg('caisseMsg','Erreur (caisse déjà ouverte ?)', true);
+        document.getElementById('caisseStatus').textContent='OUVERTE';
+        document.getElementById('caisseStatus').className='badge b-paid';
+        msg('caisseMsg','Caisse ouverte !', false);
+    }
+
+    async function voirSolde() {
+        clearMsg('caisseMsg');
+        const id = document.getElementById('myAgentId').value.trim();
+        if (!id) return msg('caisseMsg','Entrez votre Agent ID', true);
+        const {ok,data} = await api('GET',`/api/caisse/solde/${id}`);
+        if (!ok) return msg('caisseMsg', data?.message||'Erreur', true);
+        const d = data;
+        const info = document.getElementById('caisseInfo');
+        info.style.display = 'block';
+        info.innerHTML = `
+            <div class="tc-row"><span class="tc-label">Solde système</span><span class="tc-val amount-big">${d.solde}</span></div>
+            <div class="tc-row"><span class="tc-label">Ouverte le</span><span class="tc-val">${d.ouverteLe?.substring(0,16)||'—'}</span></div>`;
+    }
+
+    async function voirHistorique() {
+        clearMsg('caisseMsg');
+        const id = document.getElementById('myAgentId').value.trim();
+        if (!id) return msg('caisseMsg','Entrez votre Agent ID', true);
+        const {ok,data} = await api('GET',`/api/caisse/historique/${id}`);
+        if (!ok) return msg('caisseMsg', data?.message||'Erreur', true);
+        const list = data || [];
+        const info = document.getElementById('caisseInfo');
+        info.style.display = 'block';
+        if (!list.length) { info.innerHTML = '<p style="color:#aaa">Aucune opération aujourd\'hui</p>'; return; }
+        info.innerHTML = `<table style="width:100%;font-size:.82rem">
+            <thead><tr><th>Type</th><th>Montant</th><th>Solde après</th><th>Code</th><th>Heure</th></tr></thead>
+            <tbody>${list.map(o=>`<tr>
+                <td><span class="badge ${o.type==='ENVOI'?'b-pending':'b-paid'}">${o.type}</span></td>
+                <td>${o.amount}</td><td>${o.balanceAfter}</td>
+                <td>${o.transferCode||'—'}</td>
+                <td>${o.createdAt?.substring(11,16)||'—'}</td>
+            </tr>`).join('')}</tbody></table>`;
+    }
+
+    async function fermerCaisse() {
+        clearMsg('caisseMsg');
+        const id = document.getElementById('myAgentId').value.trim();
+        const solde = document.getElementById('soldeReel').value.trim();
+        if (!id) return msg('caisseMsg','Entrez votre Agent ID', true);
+        if (!solde) return msg('caisseMsg','Entrez le solde réel compté', true);
+        const {ok,data} = await api('POST',`/api/caisse/fermer/${id}?soldeReel=${solde}`);
+        if (!ok) return msg('caisseMsg', data?.message||'Erreur fermeture', true);
+        document.getElementById('caisseStatus').textContent='FERMÉE';
+        document.getElementById('caisseStatus').className='badge b-cancelled';
+        const statut = data.statut;
+        const color = statut==='OK'?'#27ae60':statut==='MANQUE'?'#e74c3c':'#f39c12';
+        msg('caisseMsg', `${data.message} | Système: ${data.soldeSysteme} | Réel: ${data.soldeReel} | Écart: ${data.ecart}`, statut!=='OK');
+        document.getElementById('caisseMsg').style.borderColor = color;
+    }
+
+    async function creerEnvoi() {
+        clearMsg('envoiMsg');
+        const {ok,data} = await api('POST','/api/envoi',{
+            senderName:       document.getElementById('eSnNom').value.trim(),
+            senderFirstName:  document.getElementById('eSnPrenom').value.trim(),
+            senderCIN:        document.getElementById('eSnCin').value.trim(),
+            senderPhone:      document.getElementById('eSnTel').value.trim(),
+            senderCountry:    document.getElementById('eSnPays').value.trim(),
+            recipientName:    document.getElementById('eBnNom').value.trim(),
+            recipientFirstName: document.getElementById('eBnPrenom').value.trim(),
+            recipientPhone:   document.getElementById('eBnTel').value.trim(),
+            recipientCountry: document.getElementById('eBnPays').value.trim(),
+            amount:           parseFloat(document.getElementById('eAmount').value),
+            currency:         document.getElementById('eCurrency').value.trim(),
+            corridorId:       parseInt(document.getElementById('eCorridorId').value)
+        });
+        if (!ok) return msg('envoiMsg', data?.message||'Erreur', true);
+        const code = data.data?.transferCode || '?';
+        msg('envoiMsg', `✅ Transfert créé ! Code : ${code}`, false);
+    }
+
+    async function rechercherTransfert() {
+        clearMsg('retraitMsg');
+        document.getElementById('transferPreview').style.display='none';
+        document.getElementById('retraitSuccess').style.display='none';
+        const code = document.getElementById('rCode').value.trim();
+        const phone = document.getElementById('rSearchPhone').value.trim();
+        if (!code && !phone) return msg('retraitMsg','Entrez un code ou un numéro de téléphone', true);
+        const params = new URLSearchParams();
+        if (code) params.append('code', code);
+        if (phone) params.append('telephone', phone);
+        const {ok,data} = await api('GET',`/api/retrait/recherche?${params}`);
+        if (!ok) return msg('retraitMsg', data?.message||'Transfert introuvable', true);
+        const t = data;
+        if (t.status !== 'PENDING') return msg('retraitMsg',`Statut : ${t.status} — non payable`, true);
+        currentTransfer = t;
+        document.getElementById('transferInfo').innerHTML = `
+    <div class="tc-row"><span class="tc-label">Code</span><span class="tc-val">${t.transferCode}</span></div>
+    <div class="tc-row"><span class="tc-label">Bénéficiaire</span><span class="tc-val">${t.recipientName}</span></div>
+    <div class="tc-row"><span class="tc-label">Montant à payer</span><span class="amount-big">${t.paidAmount ?? t.convertedAmount ?? t.amount}</span></div>
+    <div class="tc-row"><span class="tc-label">Statut</span>${statusBadge(t.status)}</div>`;
+        document.getElementById('transferPreview').style.display='block';
+    }
+
+    async function confirmerRetrait() {
+        clearMsg('retraitMsg');
+        const phone = document.getElementById('retraitPhone').value.trim();
+        const cin   = document.getElementById('retraitCIN').value.trim();
+        if (!phone) return msg('retraitMsg','Entrez le téléphone du bénéficiaire', true);
+        if (!cin)   return msg('retraitMsg','La pièce d\'identité est obligatoire', true);
+        const {ok,data} = await api('POST','/api/retrait',{
+            transferCode:   currentTransfer.transferCode,
+            recipientPhone: phone,
+            recipientCIN:   cin
+        });
+        if (!ok) return msg('retraitMsg', data?.message||'Erreur retrait', true);
+        document.getElementById('transferPreview').style.display='none';
+        document.getElementById('successAmt').textContent = `${currentTransfer.paidAmount ?? currentTransfer.convertedAmount ?? currentTransfer.amount}`;
+        document.getElementById('successBen').textContent = `Payé à : ${currentTransfer.recipientName}`;
+        document.getElementById('successRef').textContent = `Réf : ${currentTransfer.transferCode}`;
+        document.getElementById('retraitSuccess').style.display='block';
+        currentTransfer = null;
+    }
+
+    function nouveauRetrait() {
+        document.getElementById('retraitSuccess').style.display='none';
+        document.getElementById('rCode').value='';
+        document.getElementById('retraitPhone').value='';
+        clearMsg('retraitMsg');
+    }
+
+    // ── CLIENT ────────────────────────────────────────────────
+    async function loadClientData() {
+        const {ok,data} = await api('GET','/api/client/profile');
+        if (ok) {
+            const u = data.data||data;
+            document.getElementById('clientProfile').innerHTML =
+                `<b>${u.username}</b> · ${u.email} · ${u.phone||'—'} · Rôle: ${u.role}`;
+        }
+        const {ok:ok2,data:data2} = await api('GET','/api/client/transfers');
+        if (ok2) {
+            const list = data2.data||data2||[];
+            const rows = list.map(t=>`<tr>
+      <td><b>${t.transferCode}</b></td>
+      <td>${t.recipientName}</td>
+      <td>${t.amount} ${t.currency}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td>${t.createdAt?t.createdAt.substring(0,10):'—'}</td>
+    </tr>`).join('');
+            document.querySelector('#tblClientTransfers tbody').innerHTML =
+                rows || '<tr><td colspan="5" style="color:#aaa">Aucun transfert</td></tr>';
+        }
+    }
+
+    async function clientSearch() {
+        const code = document.getElementById('clientSearchCode').value.trim();
+        if (!code) return;
+        const {ok,data} = await api('GET',`/api/client/transfert/${code}`);
+        const el = document.getElementById('clientSearchResult');
+        if (!ok) { el.innerHTML=`<span style="color:#e74c3c">${data?.message||'Introuvable'}</span>`; return; }
+        const t = data;
+        el.innerHTML = `<div class="card" style="background:#f8fafc;box-shadow:none;border:1.5px solid #e0e0e0;padding:14px">
+    <div class="tc-row"><span class="tc-label">Code</span><span class="tc-val">${t.code}</span></div>
+    <div class="tc-row"><span class="tc-label">Bénéficiaire</span><span class="tc-val">${t.beneficiaire}</span></div>
+    <div class="tc-row"><span class="tc-label">Pays destination</span><span class="tc-val">${t.paysDestination}</span></div>
+    <div class="tc-row"><span class="tc-label">Montant</span><span class="tc-val">${t.montant} ${t.devise}</span></div>
+    <div class="tc-row"><span class="tc-label">Statut</span>${statusBadge(t.statut)}</div>
+    <div class="tc-row"><span class="tc-label">Date</span><span class="tc-val">${t.date?.substring(0,16)||'—'}</span></div>
+  </div>`;
+    }
+
+    async function suivrePublic() {
+        const code = document.getElementById('publicCode').value.trim();
+        if (!code) return;
+        const r = await fetch(`${BASE}/api/client/transfert/${code}`);
+        const el = document.getElementById('publicResult');
+        if (!r.ok) {
+            const j = await r.json().catch(()=>({}));
+            el.innerHTML = `<span style="color:#e74c3c">${j?.message||'Transfert introuvable'}</span>`;
+            return;
+        }
+        const t = await r.json();
+        el.innerHTML = `<div class="card" style="background:#f8fafc;box-shadow:none;border:1.5px solid #e0e0e0;padding:16px">
+    <div class="tc-row"><span class="tc-label">Code</span><span class="tc-val">${t.code}</span></div>
+    <div class="tc-row"><span class="tc-label">Bénéficiaire</span><span class="tc-val">${t.beneficiaire}</span></div>
+    <div class="tc-row"><span class="tc-label">Pays destination</span><span class="tc-val">${t.paysDestination}</span></div>
+    <div class="tc-row"><span class="tc-label">Montant</span><span class="amount-big">${t.montant} ${t.devise}</span></div>
+    <div class="tc-row"><span class="tc-label">Statut</span>${statusBadge(t.statut)}</div>
+    <div class="tc-row"><span class="tc-label">Date</span><span class="tc-val">${t.date?.substring(0,16)||'—'}</span></div>
+  </div>`;
+    }
+
+    // Enter key
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        const scr = document.querySelector('.screen.active')?.id;
+        if (scr === 'scrAuth') {
+            const tab = document.querySelector('.tab.active')?.id;
+            if (tab === 'tabLogin') login();
+            else register();
+        }
+    });
+</script>
+</body>
+</html>
