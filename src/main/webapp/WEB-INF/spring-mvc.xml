@@ -13,6 +13,7 @@
 
     <!-- Let Tomcat serve static files (.html, .css, .js, etc.) -->
     <mvc:default-servlet-handler/>
+    <mvc:annotation-driven/>
 
     <!-- Controllers -->
     <context:component-scan base-package="com.okanetransfer.controller"
