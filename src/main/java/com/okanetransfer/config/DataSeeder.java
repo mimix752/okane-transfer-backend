@@ -30,8 +30,26 @@ public class DataSeeder implements ApplicationListener<ContextRefreshedEvent> {
     @Override
     @Transactional
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        if (seeded || currencyRepository.count() > 0) return;
+        if (seeded) return;
         seeded = true;
+
+        // ── Admin User (always runs, even if DB already seeded) ──
+        if (userRepository.findByUsername("admin").isEmpty()) {
+            User admin = new User();
+            admin.setUsername("admin");
+            admin.setEmail("admin@okanetransfer.com");
+            admin.setPassword(passwordEncoder.encode("admin"));
+            admin.setRole(Role.ADMIN);
+            admin.setEnabled(true);
+            admin.setNotifyEmail(true);
+            admin.setNotifySms(true);
+            admin.setPhone("+212600000001");
+            userRepository.save(admin);
+            System.out.println("✅ Admin user created: admin/admin");
+        }
+
+        // ── Skip rest if already seeded ──────────────────────────
+        if (currencyRepository.count() > 0) return;
 
         // ── Currencies ──────────────────────────────────────────
         Currency mad = currencyRepository.save(Currency.builder()
@@ -130,24 +148,6 @@ public class DataSeeder implements ApplicationListener<ContextRefreshedEvent> {
                 null, "Agence Rabat Hassan", "45 Av Allal Ben Abdellah", "MA",
                 new BigDecimal("300000"), new BigDecimal("80000"),
                 true, null, null));
-
-        if (userRepository.findByUsername("admin").isEmpty()) {
-            User admin = new User();
-            admin.setUsername("admin");
-            admin.setEmail("admin@admin.com");
-            admin.setPassword(passwordEncoder.encode("admin"));
-            admin.setRole(Role.ADMIN);
-            admin.setEnabled(true);
-            admin.setNotifyEmail(true);
-            admin.setNotifySms(true);
-            admin.setPhone("+212600000000");
-            admin.setCreatedAt(LocalDateTime.now());
-            admin.setUpdatedAt(LocalDateTime.now());
-            userRepository.save(admin);
-            System.out.println("✅ Admin user created: admin/admin");
-        }
-        entityManager.flush();
-
 
         entityManager.flush();
         System.out.println("✅ DataSeeder: seed completed successfully.");
