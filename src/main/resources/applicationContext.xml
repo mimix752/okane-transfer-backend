@@ -27,7 +27,10 @@
                                 expression="com.okanetransfer.config.SecurityConfig"/>
     </context:component-scan>
 
-    <context:property-placeholder location="classpath:application.properties"/>
+    <context:property-placeholder system-properties-mode="OVERRIDE"
+                                  ignore-resource-not-found="true"
+                                  location="classpath:application.properties"/>
+
     <tx:annotation-driven transaction-manager="transactionManager"/>
     <jpa:repositories base-package="com.okanetransfer.repository"
                       entity-manager-factory-ref="entityManagerFactory"
