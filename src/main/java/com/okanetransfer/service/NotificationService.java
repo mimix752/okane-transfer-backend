@@ -59,7 +59,7 @@ public class NotificationService {
         sendSms(safeAccount, message);
     }
 
-    public void sendStatusChangeNotification(User user, String transferCode, String newStatus) {
+    public void sendStatusChangeNotification(User user, String transferCode, String newStatus, String string) {
         if (!user.isNotifyEmail()) {
             log.debug("Email ignoré (préférence désactivée) pour {}", user.getEmail());
             return;
@@ -68,7 +68,10 @@ public class NotificationService {
     }
 
     public void sendProfileUpdateNotification(User user) {
-        if (!user.isNotifyEmail()) return;
+        if (!user.isNotifyEmail()) {
+            log.debug("Email ignoré (préférence désactivée) pour {}", user.getEmail());
+            return;
+        }
         log.info("NOTIFICATION EMAIL [{}]: profil mis a jour pour {}", user.getEmail(), user.getUsername());
     }
 
@@ -121,4 +124,6 @@ public class NotificationService {
     private String sanitize(String input) {
         return input != null ? input.replaceAll("[\\r\\n]", "") : "";
     }
+
+
 }

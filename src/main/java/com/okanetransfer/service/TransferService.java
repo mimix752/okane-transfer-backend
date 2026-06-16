@@ -82,7 +82,7 @@ public class TransferService {
         // Notifier le client du changement de statut
         if (updated.getSender() != null && updated.getSender().getEmail() != null) {
             notificationService.sendStatusChangeNotification(
-                    updated.getSender().getEmail(),
+                    updated.getSender(),
                     updated.getSender().getUsername(),
                     updated.getTransferCode(),
                     newStatus.toString()

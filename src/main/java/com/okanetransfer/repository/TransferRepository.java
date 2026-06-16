@@ -1,6 +1,7 @@
 package com.okanetransfer.repository;
 
 import com.okanetransfer.entity.Transfer;
+import com.okanetransfer.entity.User;
 import com.okanetransfer.enums.TransferStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,7 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
 
     List<Transfer> findByStatus(TransferStatus status);
 
+    List<Transfer> findBySenderUserOrderByCreatedAtDesc(User senderUser);
     // ── Par téléphone bénéficiaire ───────────────────────────
 
     @Query("SELECT t FROM Transfer t " +

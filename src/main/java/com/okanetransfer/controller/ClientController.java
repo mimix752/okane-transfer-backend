@@ -8,6 +8,7 @@ import com.okanetransfer.dto.response.UserResponseDTO;
 import com.okanetransfer.entity.User;
 import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.ClientService;
+import com.okanetransfer.util.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -21,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/client")
@@ -40,11 +42,18 @@ public class ClientController {
         return ResponseEntity.ok(clientService.getMyTransfers());
     }
 
-    @GetMapping("/transfers/{code}")
-    @Operation(summary = "Rechercher un transfert par code")
-    public ResponseEntity<TransferResponseDTO> getByCode(@PathVariable String code) {
-        return ResponseEntity.ok(clientService.getByCode(code));
+    @GetMapping("/transfers/recent")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ApiResponse<List<TransferResponseDTO>>> getRecentTransfers() {
+        List<TransferResponseDTO> all = clientService.getMyTransfers();
+        List<TransferResponseDTO> recent = all.stream().limit(5).collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success(recent));
     }
+
+
+
+
+
 
     @GetMapping("/transfers/filter")
     @Operation(summary = "Filtrer mes transferts par statut, date, montant et corridor")
@@ -58,6 +67,14 @@ public class ClientController {
             @RequestParam(required = false) String paysDestination) {
         return ResponseEntity.ok(
                 clientService.filterTransfers(statut, dateDebut, dateFin, montantMin, montantMax, paysSource, paysDestination));
+    }
+
+    @GetMapping("/transfers/{id}")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ApiResponse<TransferResponseDTO>> getTransferById(
+            @PathVariable Long id) {
+        TransferResponseDTO dto = clientService.getTransferById(id);
+        return ResponseEntity.ok(ApiResponse.success(dto));
     }
 
     @GetMapping("/profile")

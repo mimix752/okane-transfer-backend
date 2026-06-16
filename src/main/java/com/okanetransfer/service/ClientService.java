@@ -11,7 +11,6 @@ import java.util.List;
 
 public interface ClientService {
     List<TransferResponseDTO> getMyTransfers();
-    TransferResponseDTO getByCode(String transferCode);
     List<TransferResponseDTO> filterTransfers(String statut, String dateDebut, String dateFin,
                                               BigDecimal montantMin, BigDecimal montantMax,
                                               String paysSource, String paysDestination);
@@ -19,12 +18,14 @@ public interface ClientService {
     UserResponseDTO updateProfile(String firstName, String lastName, String phone,String username);
     void deleteAccount();
     void changePassword(ChangePasswordRequestDTO request);
-
+    TransferResponseDTO getTransferById(Long id);
     @Transactional(readOnly = true)
     NotificationPreferencesDTO getNotificationPreferences();
 
     @Transactional
     NotificationPreferencesDTO updateNotificationPreferences(NotificationPreferencesDTO request);
+
+
 
 
 }

@@ -25,8 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class ClientServiceImpl implements ClientService {
@@ -49,36 +51,46 @@ public class ClientServiceImpl implements ClientService {
     @Autowired
     private ClientRateLimiterService rateLimiterService;
 
-    // ─── GET MY TRANSFERS ───
     @Override
     @Transactional(readOnly = true)
     public List<TransferResponseDTO> getMyTransfers() {
         User client = getConnectedUser();
 
-        String phone = client.getPhone();
-        if (phone == null || phone.isBlank()) {
-            return List.of();
-        }
+        // Transfers the user SENT (linked via senderUser FK)
+        List<Transfer> sent = transferRepository
+                .findBySenderUserOrderByCreatedAtDesc(client);
 
-        return transferRepository.findByRecipientPhoneOrderByCreatedAtDesc(phone)
-                .stream()
+        // Transfers the user can RECEIVE (matched by phone, for non-registered recipients)
+        List<Transfer> received = (client.getPhone() != null && !client.getPhone().isBlank())
+                ? transferRepository.findByRecipientPhoneOrderByCreatedAtDesc(client.getPhone())
+                : List.of();
+
+        // Merge, deduplicate by id, sort by date desc
+        return Stream.concat(sent.stream(), received.stream())
+                .collect(Collectors.toMap(Transfer::getId, t -> t, (a, b) -> a))
+                .values().stream()
+                .sorted(Comparator.comparing(Transfer::getCreatedAt).reversed())
                 .map(TransferResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
+
     // ─── GET BY CODE ───
     @Override
     @Transactional(readOnly = true)
-    public TransferResponseDTO getByCode(String transferCode) {
+    public TransferResponseDTO getTransferById(Long id) {
         User client = getConnectedUser();
-        Transfer transfer = transferRepository.findByCode(transferCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Transfert non trouvé : " + transferCode));
-        String clientPhone = client.getPhone();
-        boolean isRecipient = clientPhone != null && clientPhone.equals(transfer.getRecipientPhone());
-        boolean isSender = transfer.getSenderUser() != null &&
-                transfer.getSenderUser().getId().equals(client.getId());
-        if (!isRecipient && !isSender)
+        Transfer transfer = transferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Transfert non trouvé : " + id));
+
+        boolean isSender    = transfer.getSenderUser() != null
+                && transfer.getSenderUser().getId().equals(client.getId());
+        boolean isRecipient = client.getPhone() != null
+                && client.getPhone().equals(transfer.getRecipientPhone());
+
+        if (!isSender && !isRecipient)
             throw new AccessDeniedException("Accès non autorisé à ce transfert");
+
         return TransferResponseDTO.fromEntity(transfer);
     }
 

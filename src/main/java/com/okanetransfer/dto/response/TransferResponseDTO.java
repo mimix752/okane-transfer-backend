@@ -151,13 +151,17 @@ public class TransferResponseDTO {
         TransferResponseDTO dto = new TransferResponseDTO();
         dto.setId(transfer.getId());
         dto.setTransferCode(transfer.getTransferCode());
-        dto.setSenderUsername(transfer.getSender().getUsername());
+        dto.setSenderUsername(
+                transfer.getSenderUser() != null
+                        ? transfer.getSenderUser().getUsername()
+                        : transfer.getSenderPhone()
+        );
         dto.setRecipientName(transfer.getRecipientName());
         dto.setRecipientPhone(transfer.getRecipientPhone());
         dto.setAmount(transfer.getAmount());
-        dto.setCurrency(transfer.getCurrency() != null ? transfer.getCurrency().toString() : null);
+        dto.setCurrency(transfer.getCurrency() != null ? transfer.getCurrency().getCode() : null);
         dto.setConvertedAmount(transfer.getConvertedAmount());
-        dto.setTargetCurrency(transfer.getTargetCurrency() != null ? transfer.getTargetCurrency().toString() : null);
+        dto.setTargetCurrency(transfer.getTargetCurrency() != null ? transfer.getTargetCurrency().getCode() : null);
         dto.setStatus(transfer.getStatus().toString());
         dto.setAgencyName(transfer.getAgency() != null ? transfer.getAgency().getName() : null);
         dto.setCreatedAt(transfer.getCreatedAt());
