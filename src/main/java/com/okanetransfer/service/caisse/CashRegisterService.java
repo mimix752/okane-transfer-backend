@@ -50,6 +50,12 @@ public class CashRegisterService {
         caisse.setBalance(openingBalance);
         caisse.setOpenedAt(LocalDateTime.now());
         caisse.setOpen(true);
+        caisse.setCurrencyCode(
+                agency.getCurrencyCode() != null
+                        ? agency.getCurrencyCode()
+                        : "MAD"
+        );
+
         return cashRegisterRepository.save(caisse);
     }
 

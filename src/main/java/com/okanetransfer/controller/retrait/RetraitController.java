@@ -29,7 +29,7 @@ public class RetraitController {
         return ResponseEntity.ok(retraitService.retirer(dto, agentId));
     }
 
-    @GetMapping("/recherche")
+    @GetMapping("/rechercher")
     public ResponseEntity<RetraitResponseDTO> rechercher(
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String telephone) {

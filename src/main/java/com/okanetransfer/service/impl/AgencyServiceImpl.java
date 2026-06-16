@@ -83,6 +83,7 @@ public class AgencyServiceImpl implements AgencyService {
         agency.setDailyLimit(dto.getDailyLimit());
         agency.setCurrentBalance(BigDecimal.ZERO);
         agency.setActive(true);
+        agency.setCurrencyCode(dto.getCurrencyCode());
 
         Agency saved = agencyRepository.save(agency);
         auditService.log(SecurityUtils.getCurrentUsername(), "CREATE_AGENCY", "Agency", saved.getId(),
@@ -108,6 +109,7 @@ public class AgencyServiceImpl implements AgencyService {
         agency.setAddress(dto.getAddress());
         agency.setCountry(dto.getCountry());
         agency.setDailyLimit(dto.getDailyLimit());
+        agency.setCurrencyCode(dto.getCurrencyCode());
 
         Agency saved = agencyRepository.save(agency);
         auditService.log(SecurityUtils.getCurrentUsername(), "UPDATE_AGENCY", "Agency", id,
@@ -276,6 +278,7 @@ public class AgencyServiceImpl implements AgencyService {
         dto.setDailyLimit(agency.getDailyLimit());
         dto.setCurrentBalance(agency.getCurrentBalance());
         dto.setActive(agency.isActive());
+        dto.setCurrencyCode(agency.getCurrencyCode());
         return dto;
     }
 }

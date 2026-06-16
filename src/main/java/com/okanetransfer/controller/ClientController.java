@@ -1,17 +1,23 @@
 package com.okanetransfer.controller;
 
 import com.okanetransfer.dto.request.ChangePasswordRequestDTO;
+import com.okanetransfer.dto.request.NotificationPreferencesDTO;
 import com.okanetransfer.dto.request.UpdateProfileRequest;
 import com.okanetransfer.dto.response.TransferResponseDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
+import com.okanetransfer.entity.User;
+import com.okanetransfer.repository.UserRepository;
 import com.okanetransfer.service.ClientService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -23,6 +29,8 @@ import java.util.List;
 @SecurityRequirement(name = "bearer-key")
 public class ClientController {
 
+    @Autowired
+    private UserRepository userRepository;
     @Autowired
     private ClientService clientService;
 
@@ -83,4 +91,26 @@ public class ClientController {
         clientService.changePassword(request);
         return ResponseEntity.ok("Mot de passe modifié");
     }
+    @GetMapping("/notifications")
+    public ResponseEntity<NotificationPreferencesDTO> getNotificationPreferences(Authentication authentication) {
+        User user = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return ResponseEntity.ok(new NotificationPreferencesDTO(
+                user.isNotifyEmail(), user.isNotifySms()));
+    }
+
+    @PutMapping("/notifications")
+    public ResponseEntity<NotificationPreferencesDTO> updateNotificationPreferences(
+            @RequestBody NotificationPreferencesDTO dto, Authentication authentication) {
+
+        User user = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        user.setNotifyEmail(dto.isNotifyEmail());
+        user.setNotifySms(dto.isNotifySms());
+        userRepository.save(user);
+
+        return ResponseEntity.ok(dto);
+    }
+
 }

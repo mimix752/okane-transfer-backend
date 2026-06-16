@@ -1,6 +1,7 @@
 package com.okanetransfer.service.impl;
 
 import com.okanetransfer.dto.request.ChangePasswordRequestDTO;
+import com.okanetransfer.dto.request.NotificationPreferencesDTO;
 import com.okanetransfer.dto.response.TransferResponseDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
 import com.okanetransfer.entity.Transfer;
@@ -53,7 +54,13 @@ public class ClientServiceImpl implements ClientService {
     @Transactional(readOnly = true)
     public List<TransferResponseDTO> getMyTransfers() {
         User client = getConnectedUser();
-        return transferRepository.findBySenderId(client.getId())
+
+        String phone = client.getPhone();
+        if (phone == null || phone.isBlank()) {
+            return List.of();
+        }
+
+        return transferRepository.findByRecipientPhoneOrderByCreatedAtDesc(phone)
                 .stream()
                 .map(TransferResponseDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -66,7 +73,11 @@ public class ClientServiceImpl implements ClientService {
         User client = getConnectedUser();
         Transfer transfer = transferRepository.findByCode(transferCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Transfert non trouvé : " + transferCode));
-        if (!transfer.getSender().getId().equals(client.getId()))
+        String clientPhone = client.getPhone();
+        boolean isRecipient = clientPhone != null && clientPhone.equals(transfer.getRecipientPhone());
+        boolean isSender = transfer.getSenderUser() != null &&
+                transfer.getSenderUser().getId().equals(client.getId());
+        if (!isRecipient && !isSender)
             throw new AccessDeniedException("Accès non autorisé à ce transfert");
         return TransferResponseDTO.fromEntity(transfer);
     }
@@ -78,8 +89,8 @@ public class ClientServiceImpl implements ClientService {
                                                      BigDecimal montantMin, BigDecimal montantMax,
                                                      String paysSource, String paysDestination) {
         User client = getConnectedUser();
-        List<Transfer> myTransfers = transferRepository.findBySenderId(client.getId());
-
+        List<Transfer> myTransfers = transferRepository
+                .findByRecipientPhoneOrderByCreatedAtDesc(client.getPhone());
         return myTransfers.stream()
                 .filter(t -> {
 
@@ -191,7 +202,7 @@ public class ClientServiceImpl implements ClientService {
         );
 
         // Notification
-        notificationService.sendProfileUpdateNotification(saved.getEmail(), saved.getUsername());
+        notificationService.sendProfileUpdateNotification(saved);
 
         return UserResponseDTO.fromEntity(saved);
     }
@@ -223,7 +234,7 @@ public class ClientServiceImpl implements ClientService {
                 LocalDateTime.now() +  " - Compte supprimé email=" + oldEmail + ", username=" + oldUsername + "] | new=[anonymized]"
         );
 
-        notificationService.sendAccountDeletionNotification(oldEmail, oldUsername);
+        notificationService.sendAccountDeletionNotification(client);
     }
     
     private User getConnectedUser() {
@@ -261,5 +272,21 @@ public class ClientServiceImpl implements ClientService {
                 LocalDateTime.now() + " - L'utilisateur a changé son mot de passe"
         );
 
+    }
+    @Transactional(readOnly = true)
+    @Override
+    public NotificationPreferencesDTO getNotificationPreferences() {
+        User client = getConnectedUser();
+        return new NotificationPreferencesDTO(client.isNotifyEmail(), client.isNotifySms());
+    }
+
+    @Transactional
+    @Override
+    public NotificationPreferencesDTO updateNotificationPreferences(NotificationPreferencesDTO request) {
+        User client = getConnectedUser();
+        client.setNotifyEmail(request.isNotifyEmail());
+        client.setNotifySms(request.isNotifySms());
+        User saved = userRepository.save(client);
+        return new NotificationPreferencesDTO(saved.isNotifyEmail(), saved.isNotifySms());
     }
 }

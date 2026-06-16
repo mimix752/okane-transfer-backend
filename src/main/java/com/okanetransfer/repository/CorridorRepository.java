@@ -46,6 +46,12 @@ public interface CorridorRepository
     """)
     List<Corridor> findByCurrencyId(@Param("currencyId") Long currencyId);
 
+    @Query("SELECT c FROM Corridor c JOIN FETCH c.sourceCurrency JOIN FETCH c.destinationCurrency")
+    List<Corridor> findAllWithCurrencies();
+
     Optional<Corridor> findBySourceCountryAndDestinationCountryAndActiveTrue(
             String sourceCountry, String destinationCountry);
+
+
+
 }

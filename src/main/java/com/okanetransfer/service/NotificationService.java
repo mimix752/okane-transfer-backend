@@ -1,6 +1,7 @@
 package com.okanetransfer.service;
 
 import com.okanetransfer.entity.Transfer;
+import com.okanetransfer.entity.User;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
@@ -58,17 +59,22 @@ public class NotificationService {
         sendSms(safeAccount, message);
     }
 
-    public void sendStatusChangeNotification(String email, String username,
-                                              String transferCode, String newStatus) {
-        log.info("NOTIFICATION EMAIL [{}]: statut transfert {} -> {}", email, transferCode, newStatus);
+    public void sendStatusChangeNotification(User user, String transferCode, String newStatus) {
+        if (!user.isNotifyEmail()) {
+            log.debug("Email ignoré (préférence désactivée) pour {}", user.getEmail());
+            return;
+        }
+        log.info("NOTIFICATION EMAIL [{}]: statut transfert {} -> {}", user.getEmail(), transferCode, newStatus);
     }
 
-    public void sendProfileUpdateNotification(String email, String username) {
-        log.info("NOTIFICATION EMAIL [{}]: profil mis a jour pour {}", email, username);
+    public void sendProfileUpdateNotification(User user) {
+        if (!user.isNotifyEmail()) return;
+        log.info("NOTIFICATION EMAIL [{}]: profil mis a jour pour {}", user.getEmail(), user.getUsername());
     }
 
-    public void sendAccountDeletionNotification(String email, String username) {
-        log.info("NOTIFICATION EMAIL [{}]: compte supprime pour {}", email, username);
+    public void sendAccountDeletionNotification(User user) {
+        if (!user.isNotifyEmail()) return;
+        log.info("NOTIFICATION EMAIL [{}]: compte supprime pour {}", user.getEmail(), user.getUsername());
     }
 
     public void sendReceiptByEmail(Transfer transfer, BigDecimal fees, String recipientEmail) {
@@ -77,6 +83,16 @@ public class NotificationService {
 
     public void printReceipt(String receipt) {
         // TODO: imprimante thermique
+    }
+
+    public void sendStatusChangeSmsNotification(User user, String transferCode, String newStatus) {
+        if (!user.isNotifySms()) {
+            log.debug("SMS ignoré (préférence désactivée) pour {}", user.getEmail());
+            return;
+        }
+        String message = String.format(
+                "Okane Transfer - Transfert %s: statut mis a jour -> %s", transferCode, newStatus);
+        sendSms(user.getPhone(), message);
     }
 
     // ─── Envoi SMS via Twilio ─────────────────────────────────────────────────

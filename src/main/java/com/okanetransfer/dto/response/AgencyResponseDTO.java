@@ -12,11 +12,15 @@ public class AgencyResponseDTO {
     private BigDecimal dailyLimit;
     private BigDecimal currentBalance;
     private boolean active;
+    private String currencyCode;
+
+    public String getCurrencyCode() { return currencyCode; }
+    public void setCurrencyCode(String currencyCode) { this.currencyCode = currencyCode; }
 
     public AgencyResponseDTO() {
     }
 
-    public AgencyResponseDTO(Long id, String name, String address, String country, int agentCount, BigDecimal dailyLimit, BigDecimal currentBalance, boolean active) {
+    public AgencyResponseDTO(Long id, String name, String address, String country, int agentCount, BigDecimal dailyLimit, BigDecimal currentBalance, boolean active, String currencyCode) {
         this.id = id;
         this.name = name;
         this.address = address;
@@ -25,6 +29,7 @@ public class AgencyResponseDTO {
         this.dailyLimit = dailyLimit;
         this.currentBalance = currentBalance;
         this.active = active;
+        this.currencyCode = currencyCode;
     }
 
     public Long getId() {

@@ -1,8 +1,11 @@
 package com.okanetransfer.service;
 
 import com.okanetransfer.dto.request.ChangePasswordRequestDTO;
+import com.okanetransfer.dto.request.NotificationPreferencesDTO;
 import com.okanetransfer.dto.response.TransferResponseDTO;
 import com.okanetransfer.dto.response.UserResponseDTO;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -16,4 +19,12 @@ public interface ClientService {
     UserResponseDTO updateProfile(String firstName, String lastName, String phone,String username);
     void deleteAccount();
     void changePassword(ChangePasswordRequestDTO request);
+
+    @Transactional(readOnly = true)
+    NotificationPreferencesDTO getNotificationPreferences();
+
+    @Transactional
+    NotificationPreferencesDTO updateNotificationPreferences(NotificationPreferencesDTO request);
+
+
 }

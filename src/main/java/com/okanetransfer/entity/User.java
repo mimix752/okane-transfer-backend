@@ -14,6 +14,20 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "notify_email", nullable = false)
+    private boolean notifyEmail = true;
+
+    @Column(name = "notify_sms", nullable = false)
+    private boolean notifySms = true;
+
+    public boolean isNotifyEmail() { return notifyEmail; }
+    public void setNotifyEmail(boolean notifyEmail) { this.notifyEmail = notifyEmail; }
+
+    public boolean isNotifySms() { return notifySms; }
+    public void setNotifySms(boolean notifySms) { this.notifySms = notifySms; }
+
+
+
     @Column(nullable = false, unique = true)
     private String username;
 

@@ -118,6 +118,7 @@ public class Corridor {
         public Builder updatedAt(LocalDateTime updatedAt)
         { this.updatedAt = updatedAt; return this; }
 
+
         public Corridor build() {
             Corridor c = new Corridor();
             c.id                  = this.id;

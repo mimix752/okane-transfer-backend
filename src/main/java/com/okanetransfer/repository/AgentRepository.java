@@ -16,12 +16,21 @@ public interface AgentRepository extends JpaRepository<Agent, Long> {
 
     List<Agent> findByAgency(Agency agency);
 
+
     List<Agent> findByActive(boolean active);
+
 
     List<Agent> findByAgencyAndRole(Agency agency, Role role);
 
+
     List<Agent> findByAgency_Id(Long agencyId);
 
-    @Query("SELECT a FROM Agent a WHERE a.id = :userId")
+
+    @Query("""
+    SELECT a
+    FROM Agent a
+    JOIN FETCH a.agency
+    WHERE a.id = :userId
+    """)
     Optional<Agent> findByUserId(@Param("userId") Long userId);
 }

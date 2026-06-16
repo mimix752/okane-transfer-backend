@@ -30,9 +30,7 @@ public class CashClosingService {
         caisse.setOpen(false);
         caisse.setClosedAt(LocalDateTime.now());
 
-        Agency agency = caisse.getAgency();
-        agency.setCurrentBalance(caisse.getBalance());
-        agencyRepository.save(agency);
+
 
         Map<String, Object> result = new HashMap<>();
         result.put("caisse", caisse);

@@ -27,16 +27,13 @@ public class Transfer {
     @JoinColumn(name = "recipient_user_id", nullable = true)
     private User recipientUser;
 
-    @Column(name = "sender_phone")
     public String getSenderPhone() {
         return senderPhone;
     }
 
-    @Column(name = "recipient_phone")
+    @Column(name = "sender_phone")
     private String senderPhone;
 
-    // ─── CINs chiffrés en AES-256 (CDC 4.3) ─────────────────────────────────────
-    @Convert(converter = CryptoConverter.class)
     @Column(name = "sender_cin")
     private String senderCIN;
 
@@ -46,9 +43,9 @@ public class Transfer {
     @Column(name = "recipient_phone")
     private String recipientPhone;
 
-    @Convert(converter = CryptoConverter.class)
     @Column(name = "recipient_cin")
     private String recipientCIN;
+
     // ─────────────────────────────────────────────────────────────────────────────
 
     @Column(name = "recipient_country")
@@ -91,9 +88,6 @@ public class Transfer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_user_id", nullable = true)
     private User senderUser;
-
-
-
 
 
 
@@ -175,6 +169,7 @@ public class Transfer {
     void preUpdate() { this.updatedAt = LocalDateTime.now(); }
 
     public void setSenderPhone(String normalizedSenderPhone) {
+        this.senderPhone = normalizedSenderPhone;
     }
 
 

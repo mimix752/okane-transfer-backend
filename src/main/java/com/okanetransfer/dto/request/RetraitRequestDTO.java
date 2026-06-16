@@ -1,16 +1,12 @@
 package com.okanetransfer.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
 
 public class RetraitRequestDTO {
 
     private String transferCode;
 
-    @NotBlank
-    private String recipientPhone;
-
-    @NotBlank
-    private String recipientCIN;
+    private String senderPhone;
+    private String senderCIN;
 
     public RetraitRequestDTO() {
     }
@@ -23,19 +19,19 @@ public class RetraitRequestDTO {
         this.transferCode = transferCode;
     }
 
-    public String getRecipientPhone() {
-        return recipientPhone;
+    public String getSenderPhone() {
+        return senderPhone;
     }
 
-    public void setRecipientPhone(String recipientPhone) {
-        this.recipientPhone = recipientPhone;
+    public void setSenderPhone(String senderPhone) {
+        this.senderPhone = senderPhone;
     }
 
-    public String getRecipientCIN() {
-        return recipientCIN;
+    public String getSenderCIN() {
+        return senderCIN;
     }
 
-    public void setRecipientCIN(String recipientCIN) {
-        this.recipientCIN = recipientCIN;
+    public void setSenderCIN(String senderCIN) {
+        this.senderCIN = senderCIN;
     }
 }

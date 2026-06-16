@@ -2,8 +2,10 @@ package com.okanetransfer.service.retrait;
 
 import com.okanetransfer.dto.request.RetraitRequestDTO;
 import com.okanetransfer.dto.response.RetraitResponseDTO;
+import com.okanetransfer.entity.Agent;
 import com.okanetransfer.entity.Transfer;
 import com.okanetransfer.enums.TransferStatus;
+import com.okanetransfer.repository.AgentRepository;
 import com.okanetransfer.service.AgencyService;
 import com.okanetransfer.service.AgentAuditService;
 import com.okanetransfer.service.ReceiptPrintingService;
@@ -17,7 +19,7 @@ import java.time.LocalDateTime;
 
 @Service
 public class RetraitService {
-
+    @Autowired private AgentRepository agentRepository;
     @Autowired private VerificationRetraitService verificationService;
     @Autowired private AgencyService agencyService;
     @Autowired private AgentAuditService agentAuditService;
@@ -26,25 +28,29 @@ public class RetraitService {
 
     @Transactional
     public RetraitResponseDTO retirer(RetraitRequestDTO dto, Long agentId) {
-        Transfer t = verificationService.findByCodeOrPhone(dto.getTransferCode(), dto.getRecipientPhone());
-        verificationService.verifier(t, dto.getRecipientPhone(), dto.getRecipientCIN());
+        Transfer t = verificationService.findByCodeOrPhone(dto.getTransferCode(), dto.getSenderPhone());
+        verificationService.verifier(t, dto.getSenderPhone(), dto.getSenderCIN());
+
+        Agent payingAgent = agentRepository.findById(agentId)
+                .orElseThrow(() -> new IllegalArgumentException("Agent not found"));
 
         if (!t.getAgency().isActive()) {
             throw new IllegalStateException("Agency is suspended, cannot process withdrawal");
         }
 
-        // REMOVE the old agencyService.addBalance() line — it was wrong
-        // Cash goes OUT of the caisse (paying the recipient)
+        // Deduct convertedAmount from the PAYING agency's balance (EUR side)
+        agencyService.checkAndDeductBalance(payingAgent.getAgency().getId(), t.getConvertedAmount());
+
+        // Debit the paying agent's caisse (also in EUR)
         try {
             cashRegisterService.debiter(agentId, t.getConvertedAmount(), "RETRAIT", t.getTransferCode());
         } catch (Exception e) {
-            // log but don't block if caisse not open — handle gracefully
             System.out.println("Caisse debit warning: " + e.getMessage());
         }
 
         t.setStatus(TransferStatus.PAID);
 
-        agentAuditService.logTransferWithdrawal(t.getId(), t.getTransferCode(), dto.getRecipientPhone());
+        agentAuditService.logTransferWithdrawal(t.getId(), t.getTransferCode(), dto.getSenderPhone());
 
         String receiptContent = receiptPrintingService.generateWithdrawalReceipt(t);
         receiptPrintingService.printReceipt(receiptContent);

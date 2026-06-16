@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -123,14 +124,30 @@ public class CorridorServiceImpl implements CorridorService {
                 dto.getSourceCurrencyId());
         Currency destCurrency = findCurrencyOrThrow(
                 dto.getDestinationCurrencyId());
+        BigDecimal[] exchangeRate = { BigDecimal.ZERO };
+
+        corridorRepository
+                .findBySourceCountryAndDestinationCountry(dest, src)
+                .ifPresent(reverse -> {
+                    if (reverse.getExchangeRate() != null
+                            && reverse.getExchangeRate().compareTo(BigDecimal.ZERO) > 0) {
+                        exchangeRate[0] = BigDecimal.ONE.divide(
+                                reverse.getExchangeRate(), 6, RoundingMode.HALF_UP);
+                    }
+                });
 
         Corridor corridor = Corridor.builder()
                 .sourceCountry(src)
                 .destinationCountry(dest)
                 .sourceCurrency(srcCurrency)
                 .destinationCurrency(destCurrency)
+                .exchangeRate(exchangeRate[0])
                 .active(dto.getActive() != null ? dto.getActive() : true)
                 .build();
+
+
+
+
 
         Corridor saved = corridorRepository.save(corridor);
 

@@ -14,6 +14,17 @@ public class Agency {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    public String getCurrencyCode() {
+        return currencyCode;
+    }
+
+    public void setCurrencyCode(String currencyCode) {
+        this.currencyCode = currencyCode;
+    }
+
+    @Column(name = "currency_code", length = 3)
+    private String currencyCode;
+
     @NotBlank
     @Column(nullable = false)
     private String name;

@@ -44,6 +44,7 @@ public class CaisseController {
         result.put("solde", c.getBalance());
         result.put("ouverteLe", c.getOpenedAt() != null ? c.getOpenedAt().format(ISO) : null);
         result.put("caisseId", c.getId());
+        result.put("currencyCode",c.getCurrencyCode());
         return ResponseEntity.ok(result);
     }
 

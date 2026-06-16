@@ -3,6 +3,7 @@ package com.okanetransfer.controller.envoi;
 import com.okanetransfer.dto.request.EnvoiRequestDTO;
 import com.okanetransfer.dto.response.CorridorResponseDTO;
 import com.okanetransfer.dto.response.EnvoiResponseDTO;
+import com.okanetransfer.dto.response.FeeGridResponseDTO;
 import com.okanetransfer.dto.response.PageResponse;
 import com.okanetransfer.repository.AgentRepository;
 import com.okanetransfer.repository.UserRepository;
@@ -19,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -29,7 +31,7 @@ public class EnvoiController {
     @Autowired private CorridorService corridorService;
     @Autowired private UserRepository userRepository;
     @Autowired private AgentRepository agentRepository;
-
+    @Autowired private com.okanetransfer.service.FeeGridService feeGridService;
     @GetMapping("/currencies")
     @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<com.okanetransfer.dto.response.CurrencyResponseDTO>>> getCurrencies() {
@@ -117,5 +119,12 @@ public class EnvoiController {
         String from = agent.getAgency().getCountry();
         CorridorResponseDTO corridor = corridorService.findByCountries(from, to);
         return ResponseEntity.ok(ApiResponse.success("Corridor found", corridor));
+    }
+
+    @GetMapping("/simulate")
+    public ResponseEntity<FeeGridResponseDTO> simulate(
+            @RequestParam Long corridorId,
+            @RequestParam BigDecimal amount) {
+        return ResponseEntity.ok(feeGridService.simulate(corridorId, amount));
     }
 }

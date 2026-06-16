@@ -23,6 +23,9 @@ public class AgencyRequestDTO {
     @Positive
     private BigDecimal dailyLimit;
 
+    private String currencyCode;
+    public String getCurrencyCode() { return currencyCode; }
+    public void setCurrencyCode(String currencyCode) { this.currencyCode = currencyCode; }
     public AgencyRequestDTO() {
     }
 
@@ -73,4 +76,5 @@ public class AgencyRequestDTO {
     public void setDailyLimit(BigDecimal dailyLimit) {
         this.dailyLimit = dailyLimit;
     }
+
 }

@@ -25,10 +25,21 @@ public class CashRegister {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
+    private String currencyCode; //
+
     @Column(name = "opening_balance", nullable = false, precision = 18, scale = 2)
     private BigDecimal openingBalance = BigDecimal.ZERO;
 
     private LocalDateTime openedAt;
+
+    public String getCurrencyCode() {
+        return currencyCode;
+    }
+
+    public void setCurrencyCode(String currencyCode) {
+        this.currencyCode = currencyCode;
+    }
+
     private LocalDateTime closedAt;
     private boolean open = true;
 
@@ -109,5 +120,6 @@ public class CashRegister {
     public void setOpeningBalance(BigDecimal openingBalance) {
         this.openingBalance = openingBalance;
     }
+
 
 }

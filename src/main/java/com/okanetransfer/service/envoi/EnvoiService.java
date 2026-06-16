@@ -105,7 +105,7 @@ public class EnvoiService {
         transfer.setSender(agent);
         transfer.setSenderCIN(dto.getSenderCIN());
         transfer.setSenderPhone(normalizedSenderPhone);
-        transfer.setSenderCountry(agencySenderCountry); // derived from agency, not DTO
+        transfer.setSenderCountry(agencySenderCountry);
         transfer.setRecipientName(dto.getRecipientName() + " " + dto.getRecipientFirstName());
         transfer.setRecipientPhone(normalizedRecipientPhone);
         transfer.setRecipientCountry(dto.getRecipientCountry());

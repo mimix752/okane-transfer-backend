@@ -8,6 +8,7 @@ import com.okanetransfer.entity.CurrencyRate;
 import com.okanetransfer.entity.CurrencyRateHistory;
 import com.okanetransfer.enums.RateSource;
 import com.okanetransfer.exception.ResourceNotFoundException;
+import com.okanetransfer.repository.CorridorRepository;
 import com.okanetransfer.repository.CurrencyRateHistoryRepository;
 import com.okanetransfer.repository.CurrencyRateRepository;
 import com.okanetransfer.repository.CurrencyRepository;
@@ -40,13 +41,15 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
     private final CurrencyRateHistoryRepository historyRepository;
     private final AuditService                  auditLogService;
     private final AlertService                  alertService;
+    private final CorridorRepository corridorRepository;
 
     public ExchangeRateServiceImpl(
             CurrencyRepository currencyRepository,
             CurrencyRateRepository currencyRateRepository,
             CurrencyRateHistoryRepository historyRepository,
             AuditService auditLogService,
-            AlertService alertService) {
+            AlertService alertService, CorridorRepository corridorRepository) {
+        this.corridorRepository = corridorRepository;
         this.currencyRepository     = currencyRepository;
         this.currencyRateRepository = currencyRateRepository;
         this.historyRepository      = historyRepository;
@@ -294,6 +297,26 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
             rowOther.setSource(source);
             rowOther.setAppliedAt(LocalDateTime.now());
             currencyRateRepository.save(rowOther);
+        }
+        List<com.okanetransfer.entity.Corridor> corridors = corridorRepository.findAllWithCurrencies();
+        for (com.okanetransfer.entity.Corridor corridor : corridors) {
+            try {
+                String from = corridor.getSourceCurrency().getCode();
+                String to   = corridor.getDestinationCurrency().getCode();
+                if (from.equals(to)) continue;
+
+                // Only update corridors that involve the currency we just updated
+                if (!from.equals(fromCurrency.getCode()) && !to.equals(fromCurrency.getCode())) continue;
+
+                BigDecimal rate = BigDecimal.ZERO;
+                Optional<CurrencyRate> rateOpt = currencyRateRepository
+                        .findByFromCurrencyAndToCurrencyAndActiveTrueOrderByAppliedAtDesc(from, to);
+                if (rateOpt.isPresent()) {
+                    rate = rateOpt.get().getRate();
+                }
+                corridor.setExchangeRate(rate);
+                corridorRepository.save(corridor);
+            } catch (Exception ignored) {}
         }
     }
 

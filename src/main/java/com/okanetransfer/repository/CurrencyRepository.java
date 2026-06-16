@@ -1,7 +1,9 @@
 package com.okanetransfer.repository;
 
+import com.okanetransfer.entity.Corridor;
 import com.okanetransfer.entity.Currency;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,5 +19,8 @@ public interface CurrencyRepository
 
     boolean existsByCode(String code);
 
+
     boolean existsByCodeAndIdNot(String code, Long id);
+    @Query("SELECT c FROM Corridor c JOIN FETCH c.sourceCurrency JOIN FETCH c.destinationCurrency")
+    List<Corridor> findAllWithCurrencies();
 }

@@ -126,4 +126,5 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
     List<Transfer> findAllByRecipientPhoneOrderByCreatedAtDesc(@Param("phone") String phone);
 
     List<Transfer> findBySenderCINOrderByCreatedAtDesc(String senderCIN);
+    List<Transfer> findByRecipientPhoneOrderByCreatedAtDesc(String recipientPhone);
 }
